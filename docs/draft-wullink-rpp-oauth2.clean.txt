@@ -965,8 +965,6 @@ Table of Contents
    registrant accounts) MUST register its authorization server metadata
    with the registry.  This includes at minimum:
 
-   -  The authorization server's authorization endpoint URI, used by the
-      gaining registrar to construct the redirect.
    -  The authorization server's JWKS endpoint URI or the public key
       material itself, used by the registry to validate tokens issued by
       that authorization server.

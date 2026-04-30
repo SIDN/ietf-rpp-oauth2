@@ -421,7 +421,6 @@ The RPP federation model uses the registry as the central trust anchor, operatin
 
 **Registry as trust anchor.** As part of registrar onboarding, each registrar that operates its own authorization server (i.e., maintains registrant accounts) MUST register its authorization server metadata with the registry. This includes at minimum:
 
-- The authorization server's authorization endpoint URI, used by the gaining registrar to construct the redirect.
 - The authorization server's JWKS endpoint URI or the public key material itself, used by the registry to validate tokens issued by that authorization server.
 
 The registry stores this metadata as part of the registrar's profile and makes it available via the discovery mechanism.
