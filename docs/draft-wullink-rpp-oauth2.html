@@ -1357,9 +1357,6 @@ li > p:last-of-type:only-child {
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
                 <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-enforcing-interactive-authe" class="internal xref">Enforcing Interactive Authentication for High-Risk Operations</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.3">
-                <p id="section-toc.1-1.10.2.3.1"><a href="#section-10.3" class="auto internal xref">10.3</a>.  <a href="#name-federation-trust-model" class="internal xref">Federation Trust Model</a></p>
-</li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
@@ -2141,20 +2138,6 @@ li > p:last-of-type:only-child {
 <p id="section-10.2-3"><strong><code>sub</code> MUST identify a human principal</strong>: The registry MAY require that for high-risk operations, the <code>sub</code> claim MUST contain the identifier of an authenticated human principal, either a registrar employee or a registrant customer, and MUST NOT equal the <code>client_id</code>. In M2M tokens issued via the Client Credentials grant, <code>sub</code> is always set to <code>client_id</code>, representing an automated system rather than a human. By mandating <code>sub</code> ≠ <code>client_id</code> for designated operations, the registry ensures those operations can only be performed with a token issued on behalf of a real, identified individual. The RPP server MUST reject requests for these operations when <code>sub</code> equals <code>client_id</code>.<a href="#section-10.2-3" class="pilcrow">¶</a></p>
 <p id="section-10.2-4"><strong>Scope restriction by grant type</strong>: The registry's authorization server SHOULD be configured to refuse issuing certain high-risk scopes (e.g., <code>domain:transfer</code>) to the Client Credentials grant type. Only the Authorization Code grant (interactive) MAY be permitted to obtain these scopes. This prevents a registrar from obtaining the necessary scope for a high-risk operation through unattended M2M authentication.<a href="#section-10.2-4" class="pilcrow">¶</a></p>
 <p id="section-10.2-5">The set of operations for which interactive authentication is required is a matter of registry policy and MUST be discoverable using the RPP discovery mechanism.<a href="#section-10.2-5" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="federation-trust-model">
-<section id="section-10.3">
-        <h3 id="name-federation-trust-model">
-<a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-federation-trust-model" class="section-name selfRef">Federation Trust Model</a>
-        </h3>
-<p id="section-10.3-1">The RPP federation model uses the registry as the central trust anchor, operating as a hub-and-spoke topology. Registrars establish a trust relationship with the registry during accreditation; they do not need to establish direct trust relationships with each other. This allows any two registrars to participate in a federated transfer without any prior bilateral arrangement.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
-<p id="section-10.3-2"><strong>Registry as trust anchor.</strong> As part of registrar onboarding, each registrar that operates its own authorization server (i.e., maintains registrant accounts) MUST register its authorization server metadata with the registry. This includes at minimum:<a href="#section-10.3-2" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-10.3-3.1">The authorization server's JWKS endpoint URI or the public key material itself, used by the registry to validate tokens issued by that authorization server.<a href="#section-10.3-3.1" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-10.3-4">The registry stores this metadata as part of the registrar's profile and makes it available via the discovery mechanism.<a href="#section-10.3-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
