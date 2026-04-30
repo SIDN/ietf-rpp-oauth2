@@ -582,16 +582,6 @@
 <t><strong>Scope restriction by grant type</strong>: The registry's authorization server SHOULD be configured to refuse issuing certain high-risk scopes (e.g., <tt>domain:transfer</tt>) to the Client Credentials grant type. Only the Authorization Code grant (interactive) MAY be permitted to obtain these scopes. This prevents a registrar from obtaining the necessary scope for a high-risk operation through unattended M2M authentication.</t>
 <t>The set of operations for which interactive authentication is required is a matter of registry policy and MUST be discoverable using the RPP discovery mechanism.</t>
 </section>
-
-<section anchor="federation-trust-model"><name>Federation Trust Model</name>
-<t>The RPP federation model uses the registry as the central trust anchor, operating as a hub-and-spoke topology. Registrars establish a trust relationship with the registry during accreditation; they do not need to establish direct trust relationships with each other. This allows any two registrars to participate in a federated transfer without any prior bilateral arrangement.</t>
-<t><strong>Registry as trust anchor.</strong> As part of registrar onboarding, each registrar that operates its own authorization server (i.e., maintains registrant accounts) MUST register its authorization server metadata with the registry. This includes at minimum:</t>
-
-<ul spacing="compact">
-<li>The authorization server's JWKS endpoint URI or the public key material itself, used by the registry to validate tokens issued by that authorization server.</li>
-</ul>
-<t>The registry stores this metadata as part of the registrar's profile and makes it available via the discovery mechanism.</t>
-</section>
 </section>
 
 <section anchor="iana-considerations"><name>IANA Considerations</name>

@@ -80,7 +80,6 @@ Table of Contents
        10.1.2.  Registrant Customer Flow . . . . . . . . . . . . . .  19
      10.2.  Enforcing Interactive Authentication for High-Risk
             Operations . . . . . . . . . . . . . . . . . . . . . . .  21
-     10.3.  Federation Trust Model . . . . . . . . . . . . . . . . .  22
    11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  22
    12. Internationalization Considerations . . . . . . . . . . . . .  22
    13. Security Considerations . . . . . . . . . . . . . . . . . . .  22
@@ -104,6 +103,7 @@ Table of Contents
    of these user accounts, enabling registrars to create, modify, and
    revoke user credentials and their associated permission scopes
    without requiring manual intervention by the registry operator.
+
 
 
 
@@ -1178,27 +1178,6 @@ Wullink & Kowalik        Expires 1 November 2026               [Page 21]
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
-10.3.  Federation Trust Model
-
-   The RPP federation model uses the registry as the central trust
-   anchor, operating as a hub-and-spoke topology.  Registrars establish
-   a trust relationship with the registry during accreditation; they do
-   not need to establish direct trust relationships with each other.
-   This allows any two registrars to participate in a federated transfer
-   without any prior bilateral arrangement.
-
-   *Registry as trust anchor.* As part of registrar onboarding, each
-   registrar that operates its own authorization server (i.e., maintains
-   registrant accounts) MUST register its authorization server metadata
-   with the registry.  This includes at minimum:
-
-   -  The authorization server's JWKS endpoint URI or the public key
-      material itself, used by the registry to validate tokens issued by
-      that authorization server.
-
-   The registry stores this metadata as part of the registrar's profile
-   and makes it available via the discovery mechanism.
-
 11.  IANA Considerations
 
    TODO
@@ -1226,14 +1205,6 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
               <https://datatracker.ietf.org/doc/html/draft-kowalik-rpp-
               data-objects-03>.
 
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 22]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    [I-D.wullink-rpp-core]
               Wullink, M. and P. Kowalik, "RESTful Provisioning Protocol
               (RPP)", Work in Progress, Internet-Draft, draft-wullink-
@@ -1255,6 +1226,13 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
               Resource Identifier (URI): Generic Syntax", STD 66,
               RFC 3986, DOI 10.17487/RFC3986, January 2005,
               <https://www.rfc-editor.org/info/rfc3986>.
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 22]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
    [RFC5730]  Hollenbeck, S., "Extensible Provisioning Protocol (EPP)",
               STD 69, RFC 5730, DOI 10.17487/RFC5730, August 2009,
@@ -1281,15 +1259,6 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
               DOI 10.17487/RFC7517, May 2015,
               <https://www.rfc-editor.org/info/rfc7517>.
 
-
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 23]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    [RFC7519]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web Token
               (JWT)", RFC 7519, DOI 10.17487/RFC7519, May 2015,
               <https://www.rfc-editor.org/info/rfc7519>.
@@ -1312,6 +1281,15 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
               Access Tokens", RFC 9068, DOI 10.17487/RFC9068, October
               2021, <https://www.rfc-editor.org/info/rfc9068>.
 
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 23]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
+
    [RFC9396]  Lodderstedt, T., Richer, J., and B. Campbell, "OAuth 2.0
               Rich Authorization Requests", RFC 9396,
               DOI 10.17487/RFC9396, May 2023,
@@ -1333,6 +1311,28 @@ Authors' Addresses
    DENIC
    Email: pawel.kowalik@denic.de
    URI:   https://denic.de/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

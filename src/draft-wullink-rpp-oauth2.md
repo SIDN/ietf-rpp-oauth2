@@ -415,16 +415,6 @@ The following mechanisms MAY be used by the registry to enforce interactive auth
 
 The set of operations for which interactive authentication is required is a matter of registry policy and MUST be discoverable using the RPP discovery mechanism.
 
-## Federation Trust Model
-
-The RPP federation model uses the registry as the central trust anchor, operating as a hub-and-spoke topology. Registrars establish a trust relationship with the registry during accreditation; they do not need to establish direct trust relationships with each other. This allows any two registrars to participate in a federated transfer without any prior bilateral arrangement.
-
-**Registry as trust anchor.** As part of registrar onboarding, each registrar that operates its own authorization server (i.e., maintains registrant accounts) MUST register its authorization server metadata with the registry. This includes at minimum:
-
-- The authorization server's JWKS endpoint URI or the public key material itself, used by the registry to validate tokens issued by that authorization server.
-
-The registry stores this metadata as part of the registrar's profile and makes it available via the discovery mechanism.
-
 # IANA Considerations
 
 TODO
