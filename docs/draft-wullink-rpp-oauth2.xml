@@ -538,36 +538,61 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant <xref target
 <t>The interactive flow is used for RPP requests that require end-user interaction. The OAuth 2.0 Authorization Code grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.1"></xref> MUST be used for this flow. <strong>Registrar employees</strong> are managed as users in the <strong>registry's AS</strong>. A registrar employee uses the registrar's client application to perform operations on behalf of the registrar, such as updating domain records or managing contacts. The registry's AS authenticates the employee and issues an access token. The <tt>sub</tt> claim will contain the employee's account identifier in the registry's AS, and the <tt>iss</tt> claim will identify the registry's AS.</t>
 <t>This will enable a registrar to implement fine-grained access control for its employees by assigning different scopes to different employee accounts in the registry's AS. For example, a junior employee may be granted only <tt>domain:read</tt> scope, while a senior employee may be granted <tt>domain:create</tt> and <tt>domain:update</tt> scopes. This is an optional use case, and a registrar may choose to use the M2M flow for all operations if it does not require individual employee accountability or if it deems this to be too complex to manage.</t>
 <t>In this flow, the employee authenticates with the registry's AS. The registry acts as both the AS and the RPP resource server.</t>
-<figure><name>Interactive Flow - Registrar Employee (Registry Auth Server)
+<figure><name>Interactive Flow - Registrar Employee
 </name>
-<sourcecode type="ascii"><![CDATA[  Registrar          Registry             Registry
-  Employee +         Auth Server          RPP Server
-  Client App             |                    |
-     |                   |                    |
-     | 1. Login /        |                    |
-     |  auth request     |                    |
-     +------------------>|                    |
-     |                   |                    |
-     | 2. Access token   |                    |
-     |  (sub=employee_id |                    |
-     |   iss=registry)   |                    |
-     |<------------------|                    |
-     |                   |                    |
-     | 3. RPP request    |                    |
-     |  (Bearer token)   |                    |
-     +--------------------------------------->|
-     |                   |                    |
-     |                   |  4. Validate JWT   |
-     |                   |  (local, cached    |
-     |                   |   registry public  |
-     |                   |   key)             |
-     |                   |                    |
-     | 5. RPP response   |                    |
-     |<---------------------------------------|
-     |                   |                    |
+<sourcecode type="ascii"><![CDATA[  Registrar        Registrar          Registry             Registry
+  Employee         Client App         Auth Server          RPP Server
+  (Browser)            |                  |                    |
+     | 1. Login /      |                  |                    |
+     |  auth request   |                  |                    |
+     +---------------->|                  |                    |
+     |                 |                  |                    |
+     |                 | 2. Forward auth  |                    |
+     |                 |  request         |                    |
+     |                 +----------------->|                    |
+     |                 |                  |                    |
+     |                 | 3. Access token  |                    |
+     |                 |  (sub=employee_id|                    |
+     |                 |   iss=registry)  |                    |
+     |                 |<-----------------|                    |
+     |                 |                  |                    |
+     | 4. Access token |                  |                    |
+     |<----------------|                  |                    |
+     |                 |                  |                    |
+     | 5. RPP request  |                  |                    |
+     +---------------->|                  |                    |
+     |                 |                  |                    |
+     |                 | 6. RPP request   |                    |
+     |                 |  (Bearer token)  |                    |
+     |                 +-------------------------------------->|
+     |                 |                  |                    |
+     |                 |                  |  7. Validate JWT   |
+     |                 |                  |  (local, cached    |
+     |                 |                  |   registry public  |
+     |                 |                  |   key)             |
+     |                 |                  |                    |
+     |                 | 8. RPP response  |                    |
+     |                 |<--------------------------------------|
+     |                 |                  |                    |
+     | 9. RPP response |                  |                    |
+     |<----------------|                  |                    |
+     |                 |                  |                    |
 ]]>
 </sourcecode>
 </figure>
+<t>The steps in the diagram are as follows:</t>
+
+<ol spacing="compact">
+<li>The registrar employee initiates a login or authorization request using the registrar's client application.</li>
+<li>The client application forwards the authorization request to the registry's AS using the OAuth 2.0 Authorization Code grant.</li>
+<li>The registry's AS authenticates the employee and issues a signed, short-lived JWT access token containing the granted scopes, <tt>sub</tt> (set to the employee's account identifier), and <tt>rpp_registrar_id</tt>. The <tt>iss</tt> claim identifies the registry's AS.</li>
+<li>The client application returns the access token to the registrar employee.</li>
+<li>The registrar employee submits an RPP request via the client application.</li>
+<li>The client application forwards the RPP request to the registry's RPP server, including the access token in the HTTP <tt>Authorization</tt> header as a Bearer token.</li>
+<li>The RPP server validates the JWT locally using the cached registry public key (fetched via OAuth 2.0 AS Metadata <xref target="RFC8414"></xref> and the referenced JWKS <xref target="RFC7517"></xref> endpoint). It verifies the signature, checks the standard claims (<tt>iss</tt>, <tt>aud</tt>, <tt>exp</tt>), and confirms the <tt>scope</tt> claim includes the scope required for the requested operation.</li>
+<li>The RPP server processes the request and returns the RPP response to the client application.</li>
+<li>The client application returns the RPP response to the registrar employee.</li>
+</ol>
 </section>
 </section>
 

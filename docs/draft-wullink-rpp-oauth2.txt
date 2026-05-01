@@ -78,14 +78,14 @@ Table of Contents
      10.1.  Machine to Machine . . . . . . . . . . . . . . . . . . .  17
        10.1.1.  High-Risk Operations . . . . . . . . . . . . . . . .  19
      10.2.  Interactive  . . . . . . . . . . . . . . . . . . . . . .  20
-   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  21
-   12. Internationalization Considerations . . . . . . . . . . . . .  21
-   13. Security Considerations . . . . . . . . . . . . . . . . . . .  21
-   14. Change History  . . . . . . . . . . . . . . . . . . . . . . .  21
-     14.1.  Version 00 . . . . . . . . . . . . . . . . . . . . . . .  21
-   15. Normative References  . . . . . . . . . . . . . . . . . . . .  21
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  23
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  23
+   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  22
+   12. Internationalization Considerations . . . . . . . . . . . . .  22
+   13. Security Considerations . . . . . . . . . . . . . . . . . . .  22
+   14. Change History  . . . . . . . . . . . . . . . . . . . . . . .  22
+     14.1.  Version 00 . . . . . . . . . . . . . . . . . . . . . . .  22
+   15. Normative References  . . . . . . . . . . . . . . . . . . . .  22
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  24
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  24
 
 1.  Introduction
 
@@ -1122,34 +1122,83 @@ Wullink & Kowalik        Expires 1 November 2026               [Page 20]
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
-     Registrar          Registry             Registry
-     Employee +         Auth Server          RPP Server
-     Client App             |                    |
-        |                   |                    |
-        | 1. Login /        |                    |
-        |  auth request     |                    |
-        +------------------>|                    |
-        |                   |                    |
-        | 2. Access token   |                    |
-        |  (sub=employee_id |                    |
-        |   iss=registry)   |                    |
-        |<------------------|                    |
-        |                   |                    |
-        | 3. RPP request    |                    |
-        |  (Bearer token)   |                    |
-        +--------------------------------------->|
-        |                   |                    |
-        |                   |  4. Validate JWT   |
-        |                   |  (local, cached    |
-        |                   |   registry public  |
-        |                   |   key)             |
-        |                   |                    |
-        | 5. RPP response   |                    |
-        |<---------------------------------------|
-        |                   |                    |
+     Registrar        Registrar          Registry             Registry
+     Employee         Client App         Auth Server          RPP Server
+     (Browser)            |                  |                    |
+        | 1. Login /      |                  |                    |
+        |  auth request   |                  |                    |
+        +---------------->|                  |                    |
+        |                 |                  |                    |
+        |                 | 2. Forward auth  |                    |
+        |                 |  request         |                    |
+        |                 +----------------->|                    |
+        |                 |                  |                    |
+        |                 | 3. Access token  |                    |
+        |                 |  (sub=employee_id|                    |
+        |                 |   iss=registry)  |                    |
+        |                 |<-----------------|                    |
+        |                 |                  |                    |
+        | 4. Access token |                  |                    |
+        |<----------------|                  |                    |
+        |                 |                  |                    |
+        | 5. RPP request  |                  |                    |
+        +---------------->|                  |                    |
+        |                 |                  |                    |
+        |                 | 6. RPP request   |                    |
+        |                 |  (Bearer token)  |                    |
+        |                 +-------------------------------------->|
+        |                 |                  |                    |
+        |                 |                  |  7. Validate JWT   |
+        |                 |                  |  (local, cached    |
+        |                 |                  |   registry public  |
+        |                 |                  |   key)             |
+        |                 |                  |                    |
+        |                 | 8. RPP response  |                    |
+        |                 |<--------------------------------------|
+        |                 |                  |                    |
+        | 9. RPP response |                  |                    |
+        |<----------------|                  |                    |
+        |                 |                  |                    |
 
-       Figure 2: Interactive Flow - Registrar Employee (Registry Auth
-                                  Server)
+              Figure 2: Interactive Flow - Registrar Employee
+
+   The steps in the diagram are as follows:
+
+   1.  The registrar employee initiates a login or authorization request
+       using the registrar's client application.
+   2.  The client application forwards the authorization request to the
+       registry's AS using the OAuth 2.0 Authorization Code grant.
+
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 21]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
+
+   3.  The registry's AS authenticates the employee and issues a signed,
+       short-lived JWT access token containing the granted scopes, sub
+       (set to the employee's account identifier), and rpp_registrar_id.
+       The iss claim identifies the registry's AS.
+   4.  The client application returns the access token to the registrar
+       employee.
+   5.  The registrar employee submits an RPP request via the client
+       application.
+   6.  The client application forwards the RPP request to the registry's
+       RPP server, including the access token in the HTTP Authorization
+       header as a Bearer token.
+   7.  The RPP server validates the JWT locally using the cached
+       registry public key (fetched via OAuth 2.0 AS Metadata [RFC8414]
+       and the referenced JWKS [RFC7517] endpoint).  It verifies the
+       signature, checks the standard claims (iss, aud, exp), and
+       confirms the scope claim includes the scope required for the
+       requested operation.
+   8.  The RPP server processes the request and returns the RPP response
+       to the client application.
+   9.  The client application returns the RPP response to the registrar
+       employee.
 
 11.  IANA Considerations
 
@@ -1171,19 +1220,19 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 15.  Normative References
 
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 21]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    [I-D.kowalik-rpp-data-objects]
               Kowalik, P. and M. Wullink, "RESTful Provisioning Protocol
               (RPP) Data Objects", Work in Progress, Internet-Draft,
               draft-kowalik-rpp-data-objects-03, 2 March 2026,
               <https://datatracker.ietf.org/doc/html/draft-kowalik-rpp-
               data-objects-03>.
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 22]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
    [I-D.wullink-rpp-core]
               Wullink, M. and P. Kowalik, "RESTful Provisioning Protocol
@@ -1224,16 +1273,6 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
               Contact Mapping", STD 69, RFC 5733, DOI 10.17487/RFC5733,
               August 2009, <https://www.rfc-editor.org/info/rfc5733>.
 
-
-
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 22]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    [RFC6749]  Hardt, D., Ed., "The OAuth 2.0 Authorization Framework",
               RFC 6749, DOI 10.17487/RFC6749, October 2012,
               <https://www.rfc-editor.org/info/rfc6749>.
@@ -1241,6 +1280,15 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
    [RFC7517]  Jones, M., "JSON Web Key (JWK)", RFC 7517,
               DOI 10.17487/RFC7517, May 2015,
               <https://www.rfc-editor.org/info/rfc7517>.
+
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 23]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
    [RFC7519]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web Token
               (JWT)", RFC 7519, DOI 10.17487/RFC7519, May 2015,
@@ -1281,58 +1329,10 @@ Authors' Addresses
    URI:   https://sidn.nl/
 
 
-
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 23]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    Pawel Kowalik
    DENIC
    Email: pawel.kowalik@denic.de
    URI:   https://denic.de/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
