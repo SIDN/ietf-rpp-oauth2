@@ -68,26 +68,26 @@ Table of Contents
      5.1.  Scope Derivation Rules  . . . . . . . . . . . . . . . . .   5
      5.2.  Scope Registry  . . . . . . . . . . . . . . . . . . . . .   6
    6.  Rich Authorization Requests (RAR) . . . . . . . . . . . . . .   8
-   7.  Claims  . . . . . . . . . . . . . . . . . . . . . . . . . . .   9
-     7.1.  Required Claims . . . . . . . . . . . . . . . . . . . . .   9
-     7.2.  RPP-Specific Claims . . . . . . . . . . . . . . . . . . .  11
-     7.3.  Claim Validation  . . . . . . . . . . . . . . . . . . . .  15
-   8.  Managing Trust and Keys . . . . . . . . . . . . . . . . . . .  15
-   9.  Flows . . . . . . . . . . . . . . . . . . . . . . . . . . . .  16
-   10. Machine to Machine  . . . . . . . . . . . . . . . . . . . . .  16
-     10.1.  Interactive  . . . . . . . . . . . . . . . . . . . . . .  18
-       10.1.1.  Registrar Employee Flow  . . . . . . . . . . . . . .  18
-       10.1.2.  Registrant Customer Flow . . . . . . . . . . . . . .  19
+   7.  Claims  . . . . . . . . . . . . . . . . . . . . . . . . . . .  10
+     7.1.  Required Claims . . . . . . . . . . . . . . . . . . . . .  10
+     7.2.  RPP-Specific Claims . . . . . . . . . . . . . . . . . . .  12
+     7.3.  Claim Validation  . . . . . . . . . . . . . . . . . . . .  16
+   8.  Managing Trust and Keys . . . . . . . . . . . . . . . . . . .  16
+   9.  Flows . . . . . . . . . . . . . . . . . . . . . . . . . . . .  17
+   10. Machine to Machine  . . . . . . . . . . . . . . . . . . . . .  17
+     10.1.  Interactive  . . . . . . . . . . . . . . . . . . . . . .  19
+       10.1.1.  Registrar Employee Flow  . . . . . . . . . . . . . .  19
+       10.1.2.  Registrant Customer Flow . . . . . . . . . . . . . .  20
      10.2.  Enforcing Interactive Authentication for High-Risk
-            Operations . . . . . . . . . . . . . . . . . . . . . . .  21
-   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  22
-   12. Internationalization Considerations . . . . . . . . . . . . .  22
-   13. Security Considerations . . . . . . . . . . . . . . . . . . .  22
-   14. Change History  . . . . . . . . . . . . . . . . . . . . . . .  22
-     14.1.  Version 00 . . . . . . . . . . . . . . . . . . . . . . .  22
-   15. Normative References  . . . . . . . . . . . . . . . . . . . .  22
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  24
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  24
+            Operations . . . . . . . . . . . . . . . . . . . . . . .  22
+   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  23
+   12. Internationalization Considerations . . . . . . . . . . . . .  23
+   13. Security Considerations . . . . . . . . . . . . . . . . . . .  23
+   14. Change History  . . . . . . . . . . . . . . . . . . . . . . .  23
+     14.1.  Version 00 . . . . . . . . . . . . . . . . . . . . . . .  23
+   15. Normative References  . . . . . . . . . . . . . . . . . . . .  23
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  25
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  25
 
 1.  Introduction
 
@@ -399,6 +399,11 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 6.  Rich Authorization Requests (RAR)
 
+   *TODO:* make this RAR section more generic so that is can be used for
+   multiple operations, not just transfer.  For example delegation
+   management could also benefit from RAR to convey the specific domain
+   whose delegation data is being managed.
+
    OAuth 2.0 Rich Authorization Requests [RFC9396] extends the standard
    OAuth 2.0 authorization request with an authorization_details
    parameter that carries a structured JSON object describing precisely
@@ -408,40 +413,35 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
    as the specific object being transferred.  The authorization server
    can present to the user in a meaningful consent screen.
 
-   In RPP, RAR is used for interactive federated object transfers to
-   convey the specific domain name or contact handle being transferred.
-   The gaining registrar includes an authorization_details object of
-   type rpp_transfer in the authorization request to the losing
-   registrar's authorization server.  The registrant then sees exactly
-   which object they are consenting to transfer.  The authorization
-   server MUST echo the authorization_details object back as a claim in
-   the issued JWT, giving the registry verifiable, tamper-proof evidence
-   of what was authorized and for which object.
+   Table Table 2 lists the RAR fields defined for RPP.
 
-   The type field MUST be set to rpp_transfer.  Table Table 2 lists the
-   RAR fields defined for RPP.
+   +===================+========+=============+========================+
+   | Field             | Type   | Requirement | Description            |
+   +===================+========+=============+========================+
+   | type              | String | REQUIRED    | The type of RPP        |
+   |                   |        |             | operation being        |
+   |                   |        |             | authorized.            |
+   +-------------------+--------+-------------+------------------------+
+   | object_type       | String | REQUIRED    | The RPP object type    |
+   |                   |        |             | being transferred.     |
+   +-------------------+--------+-------------+------------------------+
+   | object_identifier | String | REQUIRED    | The unique             |
+   |                   |        |             | identifier of the      |
+   |                   |        |             | specific object the    |
+   |                   |        |             | operation applies to   |
+   |                   |        |             | (e.g., foo.example     |
+   |                   |        |             | or CID-12345).         |
+   +-------------------+--------+-------------+------------------------+
 
-    +===================+========+=============+=====================+
-    | Field             | Type   | Requirement | Description         |
-    +===================+========+=============+=====================+
-    | type              | String | REQUIRED    | MUST be             |
-    |                   |        |             | rpp_transfer.       |
-    +-------------------+--------+-------------+---------------------+
-    | object_type       | String | REQUIRED    | The RPP object type |
-    |                   |        |             | being transferred.  |
-    |                   |        |             | MUST be one of      |
-    |                   |        |             | domain or contact.  |
-    +-------------------+--------+-------------+---------------------+
-    | object_identifier | String | REQUIRED    | The fully qualified |
-    |                   |        |             | name or handle of   |
-    |                   |        |             | the specific object |
-    |                   |        |             | to be transferred   |
-    |                   |        |             | (e.g., foo.example  |
-    |                   |        |             | or CID-12345).      |
-    +-------------------+--------+-------------+---------------------+
+       Table 2: RPP Transfer Authorization, RAR authorization_details
+                     object (Primary Method, [RFC9396])
 
-      Table 2: RPP Transfer Authorization, RAR authorization_details
-                    object (Primary Method, [RFC9396])
+   Example RAR authorization_details value for a domain transfer:
+
+
+
+
+
 
 
 
@@ -450,28 +450,61 @@ Wullink & Kowalik        Expires 1 November 2026                [Page 8]
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
-   Example RAR authorization_details value for a domain transfer:
-
    [{
-     "type": "rpp_transfer",
+     "type": "transfer",
      "object_type": "domain",
      "object_identifier": "foo.example"
    }]
 
-   The losing registrar's authorization server MUST echo the
+   The authorizing registrar's authorization server MUST echo the
    authorization_details back as a claim in the issued JWT.  The
    registry MUST validate the authorization_details claim in the token
    and MUST verify that object_type and object_identifier match the
    object being transferred.
 
-   When the losing registrar's authorization server does not support RAR
-   ([RFC9396]), the specific object being transferred MUST be conveyed
-   via the rpp_object_id claim rather than encoded in the scope string:
+   When the authorizing registrar's authorization server does not
+   support RAR ([RFC9396]), the RAR attributes MUST be conveyed using
+   individual claims;
 
-   -  To authorize a domain transfer, the specific domain name MUST be
-      present in the rpp_object_id claim (e.g., foo.example).
-   -  To authorize a contact transfer, the specific contact identifier
-      MUST be present in the rpp_object_id claim (e.g., REG-12345).
+   Table Table 2 lists the RAR fields as claims defined for RPP.
+
+   +===============+=================+======+===========+==============+
+   |Claim          |RAR Field        |Type  |Requirement|Description   |
+   +===============+=================+======+===========+==============+
+   |rpp_op_type    |type             |String|REQUIRED   |The type of   |
+   |               |                 |      |           |RPP operation |
+   |               |                 |      |           |being         |
+   |               |                 |      |           |authorized.   |
+   +---------------+-----------------+------+-----------+--------------+
+   |rpp_object_type|object_type      |String|REQUIRED   |The RPP       |
+   |               |                 |      |           |object type   |
+   |               |                 |      |           |being         |
+   |               |                 |      |           |transferred.  |
+   +---------------+-----------------+------+-----------+--------------+
+   |rpp_object_id  |object_identifier|String|REQUIRED   |The unique    |
+   |               |                 |      |           |identifier of |
+   |               |                 |      |           |the specific  |
+   |               |                 |      |           |object the    |
+   |               |                 |      |           |operation     |
+   |               |                 |      |           |applies to    |
+   |               |                 |      |           |(e.g.,        |
+   |               |                 |      |           |foo.example   |
+   |               |                 |      |           |or CID-       |
+   |               |                 |      |           |12345).       |
+   +---------------+-----------------+------+-----------+--------------+
+
+        Table 3: RPP RAR Attributes as JWT Claims (Fallback Method)
+
+
+
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026                [Page 9]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
 7.  Claims
 
@@ -482,7 +515,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 7.1.  Required Claims
 
-   Table Table 3 lists the claims defined in [RFC9068], these MUST be
+   Table Table 4 lists the claims defined in [RFC9068], these MUST be
    present in every RPP access token:
 
 
@@ -501,7 +534,30 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026                [Page 9]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 10]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -551,20 +607,20 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
     |           |         | scopes present in this claim.            |
     +-----------+---------+------------------------------------------+
 
-        Table 3: OAuth 2.0 Access Token Claims for RPP ([RFC9068])
+        Table 4: OAuth 2.0 Access Token Claims for RPP ([RFC9068])
 
 
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 10]
+Wullink & Kowalik        Expires 1 November 2026               [Page 11]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 7.2.  RPP-Specific Claims
 
-   In addition to the standard [RFC9068] claims, table Table 4 lists the
+   In addition to the standard [RFC9068] claims, table Table 5 lists the
    RPP-specific claims that are defined to enable fine-grained
    authorization decisions.  Required claims MUST be present in every
    RPP access token.  Optional claims SHOULD be included when applicable
@@ -608,64 +664,8 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
    |                     |           |       | registrar identified    |
    |                     |           |       | by rpp_registrar_id.    |
    +---------------------+-----------+-------+-------------------------+
-   |rpp_transfer_authinfo|OPTIONAL   |String | The transfer            |
-   |                     |           |       | authorization           |
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 11]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
-   |                     |           |       | information used in     |
-   |                     |           |       | Fallback flow object    |
-   |                     |           |       | transfer.  When         |
-   |                     |           |       | present, the value      |
-   |                     |           |       | MUST be equivalent to   |
-   |                     |           |       | the value that would    |
-   |                     |           |       | otherwise be sent in    |
-   |                     |           |       | the RPP-Authorization   |
-   |                     |           |       | header, using the       |
-   |                     |           |       | same <method>           |
-   |                     |           |       | <authorization          |
-   |                     |           |       | information> format.    |
-   |                     |           |       | The RPP server MUST     |
-   |                     |           |       | treat this claim as     |
-   |                     |           |       | equivalent to the       |
-   |                     |           |       | RPP-Authorization       |
-   |                     |           |       | header; if both are     |
-   |                     |           |       | present in the same     |
-   |                     |           |       | request, the claim      |
-   |                     |           |       | value MUST take         |
-   |                     |           |       | precedence.  This       |
-   |                     |           |       | claim MUST only be      |
-   |                     |           |       | present in access       |
-   |                     |           |       | tokens used for         |
-   |                     |           |       | transfer operations.    |
-   +---------------------+-----------+-------+-------------------------+
-   |rpp_object_id        |OPTIONAL   |String | The identifier of the   |
-   |                     |           |       | specific object being   |
-   |                     |           |       | transferred.  MUST be   |
-   |                     |           |       | present in access       |
-   |                     |           |       | tokens for              |
-   |                     |           |       | interactive federated   |
-   |                     |           |       | transfers when the      |
-   |                     |           |       | fallback dynamic        |
-   |                     |           |       | scope method is used    |
-   |                     |           |       | (transfer:domain or     |
-   |                     |           |       | transfer:contact) and   |
-   |                     |           |       | the                     |
-   |                     |           |       | authorization_details   |
-   |                     |           |       | claim ([RFC9396]) is    |
-   |                     |           |       | not present.  The       |
-   |                     |           |       | value MUST be the       |
-   |                     |           |       | fully qualified name    |
-   |                     |           |       | or handle of the        |
-   |                     |           |       | object (e.g.,           |
-   |                     |           |       | foo.example or CID-     |
-   |                     |           |       | 12345).  The RPP        |
-   |                     |           |       | server MUST validate    |
+   |authorization_details|OPTIONAL   |Array  | Rich authorization      |
+   |                     |           |of     | details as defined by   |
 
 
 
@@ -674,16 +674,6 @@ Wullink & Kowalik        Expires 1 November 2026               [Page 12]
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
-   |                     |           |       | that this value         |
-   |                     |           |       | matches the object      |
-   |                     |           |       | being transferred.      |
-   |                     |           |       | This claim MUST NOT     |
-   |                     |           |       | be present when         |
-   |                     |           |       | authorization_details   |
-   |                     |           |       | is present.             |
-   +---------------------+-----------+-------+-------------------------+
-   |authorization_details|OPTIONAL   |Array  | Rich authorization      |
-   |                     |           |of     | details as defined by   |
    |                     |           |Objects| [RFC9396].  MUST be     |
    |                     |           |       | present in access       |
    |                     |           |       | tokens for              |
@@ -711,17 +701,27 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
    |                     |           |       | rpp_object_id claim     |
    |                     |           |       | MUST NOT be present.    |
    +---------------------+-----------+-------+-------------------------+
-
-                 Table 4: RPP Specific Access Token Claims
-
-   The combination of the sub claim and the rpp_registrar_id claim
-   provides a complete, two-dimensional identity for every RPP request:
-   sub identifies the individual principal (registrar employee,
-   automated process, or registrar customer) that initiated the request,
-   while rpp_registrar_id identifies the registrar organization as a
-   whole within the registry's domain.
-
-
+   |rpp_object_id        |OPTIONAL   |String | The identifier of the   |
+   |                     |           |       | specific object being   |
+   |                     |           |       | transferred.  MUST be   |
+   |                     |           |       | present in access       |
+   |                     |           |       | tokens for              |
+   |                     |           |       | interactive federated   |
+   |                     |           |       | transfers when the      |
+   |                     |           |       | fallback dynamic        |
+   |                     |           |       | scope method is used    |
+   |                     |           |       | (transfer:domain or     |
+   |                     |           |       | transfer:contact) and   |
+   |                     |           |       | the                     |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | claim ([RFC9396]) is    |
+   |                     |           |       | not present.  The       |
+   |                     |           |       | value MUST be the       |
+   |                     |           |       | fully qualified name    |
+   |                     |           |       | or handle of the        |
+   |                     |           |       | object (e.g.,           |
+   |                     |           |       | foo.example or CID-     |
+   |                     |           |       | 12345).  The RPP        |
 
 
 
@@ -730,8 +730,61 @@ Wullink & Kowalik        Expires 1 November 2026               [Page 13]
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
+   |                     |           |       | server MUST validate    |
+   |                     |           |       | that this value         |
+   |                     |           |       | matches the object      |
+   |                     |           |       | being transferred.      |
+   |                     |           |       | This claim MUST NOT     |
+   |                     |           |       | be present when         |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | is present.             |
+   +---------------------+-----------+-------+-------------------------+
+   |rpp_op_type          |OPTIONAL   |String | The type of RPP         |
+   |                     |           |       | operation being         |
+   |                     |           |       | authorized.  Used in    |
+   |                     |           |       | the fallback method     |
+   |                     |           |       | (see Table 3) when      |
+   |                     |           |       | the authorization       |
+   |                     |           |       | server does not         |
+   |                     |           |       | support RAR.  MUST      |
+   |                     |           |       | NOT be present when     |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | is present.             |
+   +---------------------+-----------+-------+-------------------------+
+   |rpp_object_type      |OPTIONAL   |String | The RPP object type     |
+   |                     |           |       | the operation applies   |
+   |                     |           |       | to (e.g., domain or     |
+   |                     |           |       | contact).  Used in      |
+   |                     |           |       | the fallback method     |
+   |                     |           |       | (see Table 3) when      |
+   |                     |           |       | the authorization       |
+   |                     |           |       | server does not         |
+   |                     |           |       | support RAR.  MUST      |
+   |                     |           |       | NOT be present when     |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | is present.             |
+   +---------------------+-----------+-------+-------------------------+
+
+                 Table 5: RPP Specific Access Token Claims
+
+   The combination of the sub claim and the rpp_registrar_id claim
+   provides a complete, two-dimensional identity for every RPP request:
+   sub identifies the individual principal (registrar employee,
+   automated process, or registrar customer) that initiated the request,
+   while rpp_registrar_id identifies the registrar organization as a
+   whole within the registry's domain.
+
    The identity of the sub depends on both the flow type and the
    identity domain of the principal:
+
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 14]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
    -  In *machine-to-machine* flows, sub is the registrar's OAuth 2.0
       client identifier, representing an automated system acting on
@@ -777,19 +830,18 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
       employees different scopes (e.g., a junior employee may hold only
       domain:read scope while a senior employee holds domain:create and
       domain:update).
-
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 14]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    -  *Verify registrant consent* in interactive transfer flows, where a
       sub containing the registrant's handle provides the registry with
       verifiable evidence that the object owner explicitly authorized
       the transfer.
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 15]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
+
    -  *Facilitate incident response*, allowing the registry to correlate
       suspicious activity back to a specific principal rather than only
       to a registrar organization.
@@ -834,17 +886,17 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
    and public keys with the registry operator to establish trust for
    interactive federated transfers.
 
-
-
-
-Wullink & Kowalik        Expires 1 November 2026               [Page 15]
-
-Internet-Draft              OAuth 2.0 for RPP                 April 2026
-
-
    *TODO* Create additional endpoints for managing trusted issuers and
    their keys, or specify a manual process for registrars to submit this
    information to the registry operator.
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 16]
+
+Internet-Draft              OAuth 2.0 for RPP                 April 2026
+
 
 9.  Flows
 
@@ -893,7 +945,11 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 16]
+
+
+
+
+Wullink & Kowalik        Expires 1 November 2026               [Page 17]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -949,7 +1005,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 17]
+Wullink & Kowalik        Expires 1 November 2026               [Page 18]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1005,7 +1061,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 18]
+Wullink & Kowalik        Expires 1 November 2026               [Page 19]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1061,7 +1117,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 19]
+Wullink & Kowalik        Expires 1 November 2026               [Page 20]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1117,7 +1173,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 20]
+Wullink & Kowalik        Expires 1 November 2026               [Page 21]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1173,7 +1229,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 21]
+Wullink & Kowalik        Expires 1 November 2026               [Page 22]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1229,7 +1285,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 22]
+Wullink & Kowalik        Expires 1 November 2026               [Page 23]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1285,7 +1341,7 @@ Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 23]
+Wullink & Kowalik        Expires 1 November 2026               [Page 24]
 
 Internet-Draft              OAuth 2.0 for RPP                 April 2026
 
@@ -1341,4 +1397,4 @@ Authors' Addresses
 
 
 
-Wullink & Kowalik        Expires 1 November 2026               [Page 24]
+Wullink & Kowalik        Expires 1 November 2026               [Page 25]
