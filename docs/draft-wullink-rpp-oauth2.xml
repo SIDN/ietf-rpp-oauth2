@@ -23,7 +23,7 @@
 <middle>
 
 <section anchor="introduction"><name>Introduction</name>
-<t>A key design goal of RPP's authorization model is fine-grained access control. A registrar MUST be able to operate multiple user accounts within the registry, each carrying a distinct set of permissions appropriate to the user's role (e.g., read-only reporting accounts, accounts limited to a specific set of operations, or fully privileged administrative accounts). This allows registrars to implement the principle of least privilege within their own organizations without requiring separate registry-level registrar accounts. The registry's authorization server MUST support registrar self-service management of these user accounts, enabling registrars to create, modify, and revoke user credentials and their associated permission scopes without requiring manual intervention by the registry operator.</t>
+<t>A key design goal of RPP's authorization model is fine-grained access control. A registrar MUST be able to operate multiple user accounts within the registry, each carrying a distinct set of permissions appropriate to the user's role (e.g., read-only reporting accounts, accounts limited to a specific set of operations, or fully privileged administrative accounts). This allows registrars to implement the principle of least privilege within their own organizations without requiring separate registry-level registrar accounts. The registry's AS MUST support registrar self-service management of these user accounts, enabling registrars to create, modify, and revoke user credentials and their associated permission scopes without requiring manual intervention by the registry operator.</t>
 <t>Due to the stateless nature of RPP, the client MUST include authorization credentials in each HTTP request. RPP uses OAuth 2.0 <xref target="RFC6749"></xref> for delegated authorization via Bearer tokens. Basic authentication <xref target="RFC7617"></xref> SHOULD NOT be used. The server MUST validate the Bearer token on each request and reject any request with an invalid or expired token with an appropriate HTTP status code.</t>
 </section>
 
@@ -46,27 +46,17 @@
 <t>All example requests assume a RPP server using HTTP version 2 is listening on the standard HTTPS port on host rpp.example. An authorization token has been provided by an out of band process and MUST be used by the client to authenticate each request.</t>
 </section>
 
-<section anchor="authorization-modes"><name>Authorization Modes</name>
-<t>RPP MAY use OAuth 2.0 <xref target="RFC6749"></xref> as its authorization framework. OAuth 2.0 is an authorization protocol and does not perform authentication itself; authentication of the client or end-user is handled by the authorization server before a token is issued. RPP acts as an OAuth 2.0 Resource Server and MUST validate every incoming request against a Bearer token presented in the <tt>Authorization</tt> header. The registry MAY operate its own authorization server or MAY delegate to an external authorization server. Access control decisions are derived exclusively from verified claims in the presented JWT access token.</t>
-<t>Access tokens MUST be JWTs conforming to the JWT Profile for OAuth 2.0 Access Tokens <xref target="RFC9068"></xref>. Tokens MUST be signed using asymmetric cryptography; symmetric signing algorithms (e.g., HS256) MUST NOT be used for tokens issued by external authorization servers. Short-lived tokens are RECOMMENDED and token caching and refresh strategies MUST follow the best practices defined in <xref target="RFC8725"></xref>. Sensitive claims in the JWT payload MUST be encrypted if the token is persisted to storage.</t>
-<t>RPP operates as a Policy Enforcement Point (PEP). The authorization server that issues a token is identified by the <tt>iss</tt> claim; the RPP server MUST validate the token's signature against the issuing authorization server's public key, fetched and cached via OAuth 2.0 Authorization Server Metadata <xref target="RFC8414"></xref>.</t>
-<t>RPP supports two registry authorization modes:</t>
-
-<ul spacing="compact">
-<li><strong>Internal mode</strong>: the registry operates its own authorization server and issues tokens directly to clients.</li>
-</ul>
-<t><tt>Client → Registry Authorization Server → JWT → RPP API</tt></t>
-
-<ul spacing="compact">
-<li><strong>External mode</strong>: the registry trusts one or more external authorization servers and validates tokens they issue. This mode is also required for federated object transfers, where tokens are issued by a registrar's own authorization server.</li>
-</ul>
-<t><tt>Client → External Authorization Server → JWT → RPP API</tt></t>
+<section anchor="authorization"><name>Authorization</name>
+<t>RPP MAY use OAuth 2.0 <xref target="RFC6749"></xref> as its authorization framework. OAuth 2.0 is an authorization protocol and does not perform authentication itself; authentication of the client or end-user is handled by the AS before a token is issued. RPP acts as an OAuth 2.0 Resource Server and MUST validate every incoming request against a Bearer token presented in the <tt>Authorization</tt> header. The registry MAY operate its own Authorization Server (AS) or MAY delegate to an external AS. Access control decisions are derived exclusively from verified claims in the presented JWT access token.</t>
+<t>Access tokens MUST be JWTs conforming to the JWT Profile for OAuth 2.0 Access Tokens <xref target="RFC9068"></xref>. Tokens MUST be signed using asymmetric cryptography; symmetric signing algorithms (e.g., HS256) MUST NOT be used for tokens issued by external ASs. Short-lived tokens are RECOMMENDED and token caching and refresh strategies MUST follow the best practices defined in <xref target="RFC8725"></xref>. Sensitive claims in the JWT payload MUST be encrypted if the token is persisted to storage.</t>
+<t>RPP operates as a Policy Enforcement Point (PEP). The AS that issues a token is identified by the <tt>iss</tt> claim; the RPP server MUST validate the token's signature against the issuing AS's public key, fetched and cached via OAuth 2.0 AS Metadata <xref target="RFC8414"></xref>.</t>
 <t>In both modes authorization is enforced identically. The <tt>aud</tt> claim MUST identify the RPP server as the intended audience; the RPP server MUST reject tokens where its own identifier is absent from <tt>aud</tt>.</t>
+<t>RPP MUST support the <tt>Client Credentials Grant</tt> grant type described in <xref target="RFC6749" sectionFormat="bare" section="Section 4.4"></xref> to allow registrar client systems to obtain access tokens.</t>
 </section>
 
 <section anchor="scopes"><name>Scopes</name>
 <t>OAuth scopes are used for enforcing access control when accessing RPP resources. The server MUST define a set of scopes that can be requested by clients when obtaining access tokens. The scopes MUST be based on the principle of least privilege, allowing clients to request only the permissions they need to perform their intended operations. The server MUST also define the mapping between scopes and the specific resources and operations that they grant access to.</t>
-<t>When a client requests an access token from the authorization server, it MUST include the desired scopes in the scope parameter of the token request. The authorization server MUST validate the requested scopes against the client's registered permissions and issue an access token with the appropriate scopes if the request is valid. The server MUST enforce access control based on the scopes included in the access token, allowing or denying access to resources based on the client's authorized scopes. The server MUST also implement appropriate error handling for cases where a client attempts to access a resource without the necessary scopes, returning an appropriate HTTP status code and error message.</t>
+<t>When a client requests an access token from the AS, it MUST include the desired scopes in the scope parameter of the token request. The AS MUST validate the requested scopes against the client's registered permissions and issue an access token with the appropriate scopes if the request is valid. The server MUST enforce access control based on the scopes included in the access token, allowing or denying access to resources based on the client's authorized scopes. The server MUST also implement appropriate error handling for cases where a client attempts to access a resource without the necessary scopes, returning an appropriate HTTP status code and error message.</t>
 <t>RPP scopes are based on the objects, processes and operations defined in RESTful Provisioning Protocol (RPP) data objects in <xref target="I-D.kowalik-rpp-data-objects"></xref>. Each scope corresponds to a specific set of permissions for accessing and manipulating RPP resources.</t>
 
 <section anchor="scope-derivation-rules"><name>Scope Derivation Rules</name>
@@ -85,8 +75,8 @@
 <li><t>For interactive OAuth 2.0 federated transfers, authorization MUST convey the specific object being transferred so the registrant can give informed, object-scoped consent. Two mechanisms are defined in order of preference:</t>
 
 <ul spacing="compact">
-<li><strong>Primary - Rich Authorization Requests (RAR) <xref target="RFC9396"></xref></strong>: The gaining registrar MUST include an <tt>authorization_details</tt> parameter in the authorization request containing an object of type <tt>rpp_transfer</tt> with <tt>object_type</tt> and <tt>object_identifier</tt> fields (see Table 3). This is the RECOMMENDED approach when the losing registrar's authorization server supports RAR.</li>
-<li><strong>Fallback - Transfer Scope</strong>: When the losing registrar's authorization server does not support RAR, a static transfer scope of the form <tt>&lt;object&gt;:transfer</tt> MUST be used (e.g., <tt>domain:transfer</tt>). The specific object identifier MUST be carried in the <tt>rpp_object_id</tt> claim in the issued JWT (see <xref target="rpp-specific-claims"></xref>). This scope MUST be presented to the registrant for approval, and the authorization server MUST include the <tt>rpp_object_id</tt> claim in the token.</li>
+<li><strong>Primary - Rich Authorization Requests (RAR) <xref target="RFC9396"></xref></strong>: The gaining registrar MUST include an <tt>authorization_details</tt> parameter in the authorization request containing an object of type <tt>rpp_transfer</tt> with <tt>object_type</tt> and <tt>object_identifier</tt> fields (see Table 3). This is the RECOMMENDED approach when the losing registrar's AS supports RAR.</li>
+<li><strong>Fallback - Transfer Scope</strong>: When the losing registrar's AS does not support RAR, a static transfer scope of the form <tt>&lt;object&gt;:transfer</tt> MUST be used (e.g., <tt>domain:transfer</tt>). The specific object identifier MUST be carried in the <tt>rpp_object_id</tt> claim in the issued JWT (see <xref target="rpp-specific-claims"></xref>). This scope MUST be presented to the registrant for approval, and the AS MUST include the <tt>rpp_object_id</tt> claim in the token.</li>
 </ul></li>
 <li>Extensions and additional data objects registered in the IANA RPP Data Object Registry <xref target="I-D.kowalik-rpp-data-objects"></xref> SHOULD define their own scopes following the same derivation rules, using the registered stable identifier of the extension object as the <tt>&lt;object&gt;</tt> component.</li>
 </ul>
@@ -224,7 +214,7 @@
 
 <section anchor="rich-authorization-requests-rar"><name>Rich Authorization Requests (RAR)</name>
 <t><strong>TODO:</strong> make this RAR section more generic so that is can be used for multiple operations, not just transfer. For example delegation management could also benefit from RAR to convey the specific domain whose delegation data is being managed.</t>
-<t>OAuth 2.0 Rich Authorization Requests <xref target="RFC9396"></xref> extends the standard OAuth 2.0 authorization request with an <tt>authorization_details</tt> parameter that carries a structured JSON object describing precisely what the client is requesting authorization for. Unlike scopes, which are coarse-grained string tokens, <tt>authorization_details</tt> allows the request to include typed, fine-grained authorization data, such as the specific object being transferred. The  authorization server can present to the user in a meaningful consent screen.</t>
+<t>OAuth 2.0 Rich Authorization Requests <xref target="RFC9396"></xref> extends the standard OAuth 2.0 authorization request with an <tt>authorization_details</tt> parameter that carries a structured JSON object describing precisely what the client is requesting authorization for. Unlike scopes, which are coarse-grained string tokens, <tt>authorization_details</tt> allows the request to include typed, fine-grained authorization data, such as the specific object being transferred. The  AS can present to the user in a meaningful consent screen.</t>
 <t>Table <xref target="tbl-rar"></xref> lists the RAR fields defined for RPP.</t>
 <table anchor="tbl-rar"><name>RPP Transfer Authorization, RAR <tt>authorization_details</tt> object (Primary Method, <xref target="RFC9396"></xref>)</name>
 <thead>
@@ -267,8 +257,8 @@
 }]
 ]]>
 </sourcecode>
-<t>The authorizing registrar's authorization server MUST echo the <tt>authorization_details</tt> back as a claim in the issued JWT. The registry MUST validate the <tt>authorization_details</tt> claim in the token and MUST verify that <tt>object_type</tt> and <tt>object_identifier</tt> match the object being transferred.</t>
-<t>When the authorizing registrar's authorization server does not support RAR (<xref target="RFC9396"></xref>), the RAR attributes MUST be conveyed using individual claims;</t>
+<t>The authorizing registrar's AS MUST echo the <tt>authorization_details</tt> back as a claim in the issued JWT. The registry MUST validate the <tt>authorization_details</tt> claim in the token and MUST verify that <tt>object_type</tt> and <tt>object_identifier</tt> match the object being transferred.</t>
+<t>When the authorizing registrar's AS does not support RAR (<xref target="RFC9396"></xref>), the RAR attributes MUST be conveyed using individual claims;</t>
 <t>Table <xref target="tbl-rar"></xref> lists the RAR fields as claims defined for RPP.</t>
 <table anchor="tbl-rar-claims"><name>RPP RAR Attributes as JWT Claims (Fallback Method)</name>
 <thead>
@@ -326,13 +316,13 @@
 <tr>
 <td><tt>iss</tt></td>
 <td>String (URI)</td>
-<td>Identifies the issuing authorization server. The RPP server MUST validate this against its set of trusted issuers.</td>
+<td>Identifies the issuing AS. The RPP server MUST validate this against its set of trusted issuers.</td>
 </tr>
 
 <tr>
 <td><tt>sub</tt></td>
 <td>String</td>
-<td>The subject of the token. For machine-to-machine flows this MUST be the client identifier. For interactive flows this MUST be the end-user identifier of the authenticated end-user at the issuing authorization server. The end-user MAY be a registrar employee operating the registrar's management system, or a registrar customer (registrant) directly interacting with the registrar's client application, for example when initiating an object transfer.</td>
+<td>The subject of the token. For machine-to-machine flows this MUST be the client identifier. For interactive flows this MUST be the end-user identifier of the authenticated end-user at the issuing AS. The end-user MAY be a registrar employee operating the registrar's management system, or a registrar customer (registrant) directly interacting with the registrar's client application, for example when initiating an object transfer.</td>
 </tr>
 
 <tr>
@@ -418,23 +408,23 @@
 <td><tt>rpp_op_type</tt></td>
 <td>OPTIONAL</td>
 <td>String</td>
-<td>The type of RPP operation being authorized. Used in the fallback method (see <xref target="tbl-rar-claims"></xref>) when the authorization server does not support RAR. MUST NOT be present when <tt>authorization_details</tt> is present.</td>
+<td>The type of RPP operation being authorized. Used in the fallback method (see <xref target="tbl-rar-claims"></xref>) when the AS does not support RAR. MUST NOT be present when <tt>authorization_details</tt> is present.</td>
 </tr>
 
 <tr>
 <td><tt>rpp_object_type</tt></td>
 <td>OPTIONAL</td>
 <td>String</td>
-<td>The RPP object type the operation applies to (e.g., <tt>domain</tt> or <tt>contact</tt>). Used in the fallback method (see <xref target="tbl-rar-claims"></xref>) when the authorization server does not support RAR. MUST NOT be present when <tt>authorization_details</tt> is present.</td>
+<td>The RPP object type the operation applies to (e.g., <tt>domain</tt> or <tt>contact</tt>). Used in the fallback method (see <xref target="tbl-rar-claims"></xref>) when the AS does not support RAR. MUST NOT be present when <tt>authorization_details</tt> is present.</td>
 </tr>
 </tbody>
 </table><t>The combination of the <tt>sub</tt> claim and the <tt>rpp_registrar_id</tt> claim provides a complete, two-dimensional identity for every RPP request: <tt>sub</tt> identifies the individual principal (registrar employee, automated process, or registrar customer) that initiated the request, while <tt>rpp_registrar_id</tt> identifies the registrar organization as a whole within the registry's domain.</t>
 <t>The identity of the <tt>sub</tt> depends on both the flow type and the identity domain of the principal:</t>
 
 <ul spacing="compact">
-<li>In <strong>machine-to-machine</strong> flows, <tt>sub</tt> is the registrar's OAuth 2.0 client identifier, representing an automated system acting on behalf of the registrar. The token is issued by the <strong>registry's authorization server</strong>, which maintains the registrar's client credentials.</li>
-<li>In <strong>interactive flows initiated by registrar staff</strong>, <tt>sub</tt> is the identifier of the registrar employee. Registrar employees are managed as users in the <strong>registry's authorization server</strong>. The token is therefore also issued by the registry's authorization server, and the <tt>sub</tt> value is the employee's account identifier within that server. The <tt>iss</tt> claim will identify the registry's authorization server.</li>
-<li>In <strong>interactive flows initiated by a registrant customer</strong>, the situation is different. Registrant customers are not managed in the registry's authorization server, they are maintained in the <strong>registrar's own authorization server</strong> (the registrar acts as the authorization server for its customers). The token is therefore issued by the registrar's authorization server, and the <tt>iss</tt> claim will identify the registrar's authorization server as the issuer. The registry MUST have a pre-established trust relationship with the registrar's authorization server to accept and validate such tokens. In this case, the <tt>sub</tt> value MUST be the registrant's identifier as it exists in the registry database. The registrar MUST use this registry-assigned id, not any registrar-internal customer identifier, as the <tt>sub</tt> value. This ensures the registry can unambiguously correlate the token's subject to an existing provisioned contact object. This enables verification of ownership and consent for operations. The registry MUST reject tokens where the <tt>sub</tt> value does not match a known contact handle associated with the object being acted upon.</li>
+<li>In <strong>machine-to-machine</strong> flows, <tt>sub</tt> is the registrar's OAuth 2.0 client identifier, representing an automated system acting on behalf of the registrar. The token is issued by the <strong>registry's AS</strong>, which maintains the registrar's client credentials.</li>
+<li>In <strong>interactive flows initiated by registrar staff</strong>, <tt>sub</tt> is the identifier of the registrar employee. Registrar employees are managed as users in the <strong>registry's AS</strong>. The token is therefore also issued by the registry's AS, and the <tt>sub</tt> value is the employee's account identifier within that server. The <tt>iss</tt> claim will identify the registry's AS.</li>
+<li>In <strong>interactive flows initiated by a registrant customer</strong>, the situation is different. Registrant customers are not managed in the registry's AS, they are maintained in the <strong>registrar's own AS</strong> (the registrar acts as the AS for its customers). The token is therefore issued by the registrar's AS, and the <tt>iss</tt> claim will identify the registrar's AS as the issuer. The registry MUST have a pre-established trust relationship with the registrar's AS to accept and validate such tokens. In this case, the <tt>sub</tt> value MUST be the registrant's identifier as it exists in the registry database. The registrar MUST use this registry-assigned id, not any registrar-internal customer identifier, as the <tt>sub</tt> value. This ensures the registry can unambiguously correlate the token's subject to an existing provisioned contact object. This enables verification of ownership and consent for operations. The registry MUST reject tokens where the <tt>sub</tt> value does not match a known contact handle associated with the object being acted upon.</li>
 </ul>
 <t>Together, these claims allow the RPP server to:</t>
 
@@ -445,7 +435,7 @@
 <li><strong>Verify registrant consent</strong> in interactive transfer flows, where a <tt>sub</tt> containing the registrant's handle provides the registry with verifiable evidence that the object owner explicitly authorized the transfer.</li>
 <li><strong>Facilitate incident response</strong>, allowing the registry to correlate suspicious activity back to a specific principal rather than only to a registrar organization.</li>
 </ul>
-<t>The RPP server SHOULD log both the <tt>sub</tt> and <tt>rpp_registrar_id</tt> claims for every request in its audit log. The <tt>sub</tt> value is only meaningful within the namespace of the issuing authorization server identified by the <tt>iss</tt> claim. The RPP server MUST NOT compare <tt>sub</tt> values across different issuers, except when the <tt>sub</tt> is a registry contact handle, in which case the registry MAY validate it against its own database regardless of issuer.</t>
+<t>The RPP server SHOULD log both the <tt>sub</tt> and <tt>rpp_registrar_id</tt> claims for every request in its audit log. The <tt>sub</tt> value is only meaningful within the namespace of the issuing AS identified by the <tt>iss</tt> claim. The RPP server MUST NOT compare <tt>sub</tt> values across different issuers, except when the <tt>sub</tt> is a registry contact handle, in which case the registry MAY validate it against its own database regardless of issuer.</t>
 <t>Extensions and profiles MAY define additional claims. All additional claims MUST use a URI or a collision-resistant name as the claim name to prevent conflicts with registered claims.</t>
 </section>
 
@@ -453,27 +443,44 @@
 <t>The RPP server MUST validate all required claims in accordance with <xref target="RFC9068"></xref> and <xref target="RFC8725"></xref>. Specifically:</t>
 
 <ul spacing="compact">
-<li>The <tt>iss</tt> claim MUST identify a trusted authorization server whose public keys are known to the RPP server, either through static configuration or dynamic discovery (e.g., OAuth 2.0 Authorization Server Metadata <xref target="RFC8414"></xref>).</li>
+<li>The <tt>iss</tt> claim MUST identify a trusted AS whose public keys are known to the RPP server, either through static configuration or dynamic discovery (e.g., OAuth 2.0 AS Metadata <xref target="RFC8414"></xref>).</li>
 <li>The <tt>aud</tt> claim MUST be validated to confirm the token is intended for this RPP server.</li>
 <li>The <tt>exp</tt> claim MUST be checked and expired tokens MUST be rejected with HTTP 401 Unauthorized.</li>
-<li>The JWT signature MUST be verified using asymmetric cryptography (e.g., RS256 or ES256). Symmetric algorithms (e.g., HS256) MUST NOT be used for tokens issued by external authorization servers.</li>
+<li>The JWT signature MUST be verified using asymmetric cryptography (e.g., RS256 or ES256). Symmetric algorithms (e.g., HS256) MUST NOT be used for tokens issued by external ASs.</li>
 <li>If the <tt>scope</tt> claim is absent or does not contain the scope required for the requested operation, the RPP server MUST return HTTP 403 Forbidden.</li>
 </ul>
 </section>
 </section>
 
-<section anchor="managing-trust-and-keys"><name>Managing Trust and Keys</name>
-<t>The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating JWT signatures. RPP MUST support registrars being able to register their authorization servers and public keys with the registry operator to establish trust for interactive federated transfers.</t>
+<section anchor="data-objects"><name>Data Objects</name>
+<t>The RPP Data Object Catalog described in <xref target="I-D.kowalik-rpp-data-objects"></xref> is extended to include new objects required for using OAuth 2.0 as a framework for authorization in RPP.</t>
+
+<ul spacing="compact">
+<li><t><em>Client Object</em>: A registrar MUST register at least one OAuth 2.0 client to interact with the RPP server. The Client Object MUST include the following attributes:</t>
+
+<ul spacing="compact">
+<li>Name: Unique (in registrar namespace) name of application.</li>
+<li>Description: A brief description of the application's purpose.</li>
+<li>Redirect URL: The URL to which the authorization server will redirect the user after granting or denying access.</li>
+<li>Client Id: The OAuth 2.0 client identifier issued to the client during the registration process.</li>
+<li>Client Secret: The OAuth 2.0 client secret issued to the client during the registration process.</li>
+</ul></li>
+<li>TODO</li>
+</ul>
+</section>
+
+<section anchor="managing-trust"><name>Managing Trust</name>
+<t>For more advanced use cases, enabled by OAuth 2.0, such as interactive federated transfers it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.</t>
 <t><strong>TODO</strong> Create additional endpoints for managing trusted issuers and their keys, or specify a manual process for registrars to submit this information to the registry operator.</t>
 </section>
 
 <section anchor="flows"><name>Flows</name>
-<t>RPP defines two authorization flows: machine-to-machine flows and interactive flows. Machine-to-machine flows are designed for use in automated systems where no user interaction is required. Interactive flows are designed for use in scenarios where end-user interaction is required, such as when a registrant initiates a transfer request using a registrar's web interface.</t>
-</section>
+<t>RPP defines two authorization flows: machine-to-machine flows and interactive flows. Machine-to-machine flows are designed for use in automated systems where no user interaction is required. Interactive flows are designed for use in scenarios where end-user interaction is required, such as when a registrant employee needs to interact with the registry system.
+For these interactive flows, the OAuth 2.0 Authorization Code grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.1"></xref> MUST be used.</t>
 
 <section anchor="machine-to-machine"><name>Machine to Machine</name>
 <t>The machine-to-machine (M2M) flow is used for automated, unattended RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. The OAuth 2.0 Client Credentials grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.4"></xref> MUST be used for this flow.</t>
-<t>In this flow the registrar's system authenticates directly with the registry's authorization server using a pre-registered <tt>client_id</tt> and <tt>client_secret</tt> (or a private key JWT for higher assurance). The authorization server issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <tt>Authorization</tt> header of each RPP request sent to the registry.</t>
+<t>In this flow the registrar's system authenticates directly with the registry's AS using a pre-registered <tt>client_id</tt> and <tt>client_secret</tt>. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <tt>Authorization</tt> header of each RPP request sent to the registry.</t>
 <t>The <tt>sub</tt> claim in the resulting token MUST be set to the <tt>client_id</tt> of the registrar's system. The <tt>rpp_registrar_id</tt> claim MUST also be present, identifying the registrar organization within the registry's namespace.</t>
 <figure><name>OAuth 2.0 Client Credentials Flow for Registrar-to-Registry Requests
 </name>
@@ -510,26 +517,27 @@
 <t>The steps in the diagram are as follows:</t>
 
 <ol spacing="compact">
-<li>The registrar's backend system sends a token request to the registry's authorization server, providing its <tt>client_id</tt>, <tt>client_secret</tt> (or a signed client assertion), and the requested RPP scopes (e.g., <tt>domain:create</tt>).</li>
-<li>The authorization server validates the client credentials and issues a signed, short-lived JWT access token containing the granted scopes, <tt>sub</tt> (set to <tt>client_id</tt>), and <tt>rpp_registrar_id</tt>.</li>
+<li>The registrar's backend system sends a token request to the registry's AS, providing its <tt>client_id</tt>, <tt>client_secret</tt> (or a signed client assertion), and the requested RPP scopes (e.g., <tt>domain:create</tt>).</li>
+<li>The AS validates the client credentials and issues a signed, short-lived JWT access token containing the granted scopes, <tt>sub</tt> (set to <tt>client_id</tt>), and <tt>rpp_registrar_id</tt>.</li>
 <li>The registrar's system sends the RPP request to the registry's RPP server, including the access token in the HTTP <tt>Authorization</tt> header as a Bearer token.</li>
-<li>The RPP server validates the JWT entirely locally, using the without contacting the authorization server. It verifies the token's signature using the authorization server's public key (previously fetched and cached via OAuth 2.0 Authorization Server Metadata <xref target="RFC8414"></xref> and the referenced JWKS <xref target="RFC7517"></xref> endpoint), checks the standard claims (<tt>iss</tt>, <tt>aud</tt>, <tt>exp</tt>), and confirms that the <tt>scope</tt> claim includes the scope required for the requested operation.</li>
+<li>The RPP server validates the JWT entirely locally, using the without contacting the AS. It verifies the token's signature using the AS's public key (previously fetched and cached via OAuth 2.0 AS Metadata <xref target="RFC8414"></xref> and the referenced JWKS <xref target="RFC7517"></xref> endpoint), checks the standard claims (<tt>iss</tt>, <tt>aud</tt>, <tt>exp</tt>), and confirms that the <tt>scope</tt> claim includes the scope required for the requested operation.</li>
 <li>If validation succeeds, the RPP server processes the request and returns the RPP response.</li>
 </ol>
 <t>It is RECOMMENDED that access tokens be short-lived (e.g., minutes to hours) and that the registrar's system obtain a new token before the current token expires rather than waiting for a 401 response. Token caching and refresh strategies SHOULD follow the best practices in <xref target="RFC8725"></xref>.</t>
 
+<section anchor="high-risk-operations"><name>High-Risk Operations</name>
+<t>The machine-to-machine (M2M) Client Credentials flow is appropriate for routine automated provisioning, but certain high-risk operations, e.g. object transfer or modification of authorisation information, MUST require proof that an authorized human principal explicitly approved the action. Without enforcement, a registrar could use M2M tokens for all operations, eliminating individual accountability. The operations for which interactive authentication is required are a matter of registry policy.</t>
+<t>The following mechanisms MAY be used by the registry to enforce interactive authentication for designated operations:</t>
+<t><strong><tt>sub</tt> MUST identify a human principal</strong>: The registry MAY require that for high-risk operations, the <tt>sub</tt> claim MUST contain the identifier of an authenticated human principal and MUST NOT equal the <tt>client_id</tt>. In M2M tokens issued via the Client Credentials grant, <tt>sub</tt> is always set to <tt>client_id</tt>, representing an automated system rather than a human. By mandating <tt>sub</tt> != <tt>client_id</tt> for designated operations, the registry ensures those operations can only be performed with a token issued on behalf of a real, identified individual. The RPP server MUST reject requests for these operations when <tt>sub</tt> equals <tt>client_id</tt>.</t>
+<t><strong>Scope restriction by grant type</strong>: The registry's AS SHOULD be configured to refuse issuing certain high-risk scopes to the Client Credentials grant type. Only the Authorization Code grant (interactive) MAY be permitted to obtain these scopes. This prevents a registrar from obtaining the necessary scope for a high-risk operation through unattended M2M authentication.</t>
+<t>The set of operations for which interactive authentication is required is a matter of registry policy and MUST be discoverable using the RPP discovery mechanism.</t>
+</section>
+</section>
+
 <section anchor="interactive"><name>Interactive</name>
-<t>The interactive flow is used for RPP requests that require end-user interaction. The OAuth 2.0 Authorization Code grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.1"></xref> MUST be used for this flow. Two distinct types of end-users may initiate interactive RPP requests, and they are managed in different authorization servers:</t>
-
-<ul>
-<li><t><strong>Registrar employees</strong> are managed as users in the <strong>registry's authorization server</strong>. A registrar employee uses the registrar's client application to perform operations on behalf of the registrar, such as updating domain records or managing contacts. The registry's authorization server authenticates the employee and issues an access token. The <tt>sub</tt> claim will contain the employee's account identifier in the registry's authorization server, and the <tt>iss</tt> claim will identify the registry's authorization server.</t>
-</li>
-<li><t><strong>Registrant customers</strong> are managed in the <strong>registrar's own authorization server</strong>. A registrant customer interacts directly with the registrar's client application, for example to authorize a domain transfer. The registrar's authorization server authenticates the customer and issues an access token. The <tt>sub</tt> claim MUST be set to the registrant's contact handle as registered in the registry database. The <tt>iss</tt> claim will identify the registrar's authorization server. The registry MUST have a pre-established trust relationship with the registrar's authorization server to accept tokens it issues.</t>
-</li>
-</ul>
-
-<section anchor="registrar-employee-flow"><name>Registrar Employee Flow</name>
-<t>In this flow, the employee authenticates with the registry's authorization server. The registry acts as both the authorization server and the RPP resource server.</t>
+<t>The interactive flow is used for RPP requests that require end-user interaction. The OAuth 2.0 Authorization Code grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.1"></xref> MUST be used for this flow. <strong>Registrar employees</strong> are managed as users in the <strong>registry's AS</strong>. A registrar employee uses the registrar's client application to perform operations on behalf of the registrar, such as updating domain records or managing contacts. The registry's AS authenticates the employee and issues an access token. The <tt>sub</tt> claim will contain the employee's account identifier in the registry's AS, and the <tt>iss</tt> claim will identify the registry's AS.</t>
+<t>This will enable a registrar to implement fine-grained access control for its employees by assigning different scopes to different employee accounts in the registry's AS. For example, a junior employee may be granted only <tt>domain:read</tt> scope, while a senior employee may be granted <tt>domain:create</tt> and <tt>domain:update</tt> scopes. This is an optional use case, and a registrar may choose to use the M2M flow for all operations if it does not require individual employee accountability or if it deems this to be too complex to manage.</t>
+<t>In this flow, the employee authenticates with the registry's AS. The registry acts as both the AS and the RPP resource server.</t>
 <figure><name>Interactive Flow - Registrar Employee (Registry Auth Server)
 </name>
 <sourcecode type="ascii"><![CDATA[  Registrar          Registry             Registry
@@ -560,66 +568,6 @@
 ]]>
 </sourcecode>
 </figure>
-</section>
-
-<section anchor="registrant-customer-flow"><name>Registrant Customer Flow</name>
-<t>In this flow, the registrant authenticates with the registrar's own authorization server. The registry must trust the registrar's authorization server and validate the <tt>sub</tt> against its contact database.</t>
-<figure><name>Interactive Flow - Registrant Customer (Registrar Auth Server)
-</name>
-<sourcecode type="ascii"><![CDATA[  Registrant         Registrar            Registry
-  Customer +         Auth Server          RPP Server
-  Client App             |                    |
-     |                   |                    |
-     | 1. Login /        |                    |
-     |  auth request     |                    |
-     +------------------>|                    |
-     |                   |                    |
-     | 2. Access token   |                    |
-     |  (sub=contact     |                    |
-     |   handle,         |                    |
-     |   iss=registrar)  |                    |
-     |<------------------|                    |
-     |                   |                    |
-     | 3. RPP request    |                    |
-     |  (Bearer token)   |                    |
-     +--------------------------------------->|
-     |                   |                    |
-     |                   |  4. Validate JWT   |
-     |                   |  (local, cached    |
-     |                   |   registrar public |
-     |                   |   key via          |
-     |                   |   federation)      |
-     |                   |                    |
-     |                   |  5. Verify sub     |
-     |                   |  matches contact   |
-     |                   |  handle in         |
-     |                   |  registry DB       |
-     |                   |                    |
-     | 6. RPP response   |                    |
-     |<---------------------------------------|
-     |                   |                    |
-]]>
-</sourcecode>
-</figure>
-<t>The steps for the registrant customer flow are as follows:</t>
-
-<ol spacing="compact">
-<li>The registrant authenticates with the registrar's authorization server through the registrar's client application, using the Authorization Code grant.</li>
-<li>The registrar's authorization server issues a signed JWT access token. The <tt>sub</tt> claim MUST be set to the registrant's contact handle as it exists in the registry database. The <tt>iss</tt> claim identifies the registrar's authorization server. The <tt>rpp_registrar_id</tt> claim MUST be present, identifying the sponsoring registrar.</li>
-<li>The registrar's client application sends the RPP request to the registry's RPP server, including the access token as a Bearer token.</li>
-<li>The RPP server validates the JWT locally using the registrar's authorization server public key, previously obtained via federation metadata. No live call to the registrar's authorization server is needed.</li>
-<li>The RPP server verifies that the <tt>sub</tt> value matches a known contact handle in the registry database and that the contact is associated with the object being acted upon.</li>
-<li>If all validation succeeds, the RPP server processes the request and returns the response.</li>
-</ol>
-</section>
-</section>
-
-<section anchor="enforcing-interactive-authentication-for-high-risk-operations"><name>Enforcing Interactive Authentication for High-Risk Operations</name>
-<t>The machine-to-machine (M2M) Client Credentials flow is appropriate for routine automated provisioning, but certain high-risk operations, such as object transfer or modification of authorisation information, MUST require a token demonstrating that a human principal explicitly authenticated and authorized the action. Without enforcement, a registrar could use M2M tokens for all operations, eliminating individual accountability.</t>
-<t>The following mechanisms MAY be used by the registry to enforce interactive authentication for designated operations:</t>
-<t><strong><tt>sub</tt> MUST identify a human principal</strong>: The registry MAY require that for high-risk operations, the <tt>sub</tt> claim MUST contain the identifier of an authenticated human principal, either a registrar employee or a registrant customer, and MUST NOT equal the <tt>client_id</tt>. In M2M tokens issued via the Client Credentials grant, <tt>sub</tt> is always set to <tt>client_id</tt>, representing an automated system rather than a human. By mandating <tt>sub</tt> ≠ <tt>client_id</tt> for designated operations, the registry ensures those operations can only be performed with a token issued on behalf of a real, identified individual. The RPP server MUST reject requests for these operations when <tt>sub</tt> equals <tt>client_id</tt>.</t>
-<t><strong>Scope restriction by grant type</strong>: The registry's authorization server SHOULD be configured to refuse issuing certain high-risk scopes (e.g., <tt>domain:transfer</tt>) to the Client Credentials grant type. Only the Authorization Code grant (interactive) MAY be permitted to obtain these scopes. This prevents a registrar from obtaining the necessary scope for a high-risk operation through unattended M2M authentication.</t>
-<t>The set of operations for which interactive authentication is required is a matter of registry policy and MUST be discoverable using the RPP discovery mechanism.</t>
 </section>
 </section>
 
