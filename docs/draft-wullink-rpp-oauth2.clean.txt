@@ -326,6 +326,11 @@ Table of Contents
 
 6.  Rich Authorization Requests (RAR)
 
+   *TODO:* make this RAR section more generic so that is can be used for
+   multiple operations, not just transfer.  For example delegation
+   management could also benefit from RAR to convey the specific domain
+   whose delegation data is being managed.
+
    OAuth 2.0 Rich Authorization Requests [RFC9396] extends the standard
    OAuth 2.0 authorization request with an authorization_details
    parameter that carries a structured JSON object describing precisely
@@ -335,63 +340,75 @@ Table of Contents
    as the specific object being transferred.  The authorization server
    can present to the user in a meaningful consent screen.
 
-   In RPP, RAR is used for interactive federated object transfers to
-   convey the specific domain name or contact handle being transferred.
-   The gaining registrar includes an authorization_details object of
-   type rpp_transfer in the authorization request to the losing
-   registrar's authorization server.  The registrant then sees exactly
-   which object they are consenting to transfer.  The authorization
-   server MUST echo the authorization_details object back as a claim in
-   the issued JWT, giving the registry verifiable, tamper-proof evidence
-   of what was authorized and for which object.
+   Table Table 2 lists the RAR fields defined for RPP.
 
-   The type field MUST be set to rpp_transfer.  Table Table 2 lists the
-   RAR fields defined for RPP.
+   +===================+========+=============+========================+
+   | Field             | Type   | Requirement | Description            |
+   +===================+========+=============+========================+
+   | type              | String | REQUIRED    | The type of RPP        |
+   |                   |        |             | operation being        |
+   |                   |        |             | authorized.            |
+   +-------------------+--------+-------------+------------------------+
+   | object_type       | String | REQUIRED    | The RPP object type    |
+   |                   |        |             | being transferred.     |
+   +-------------------+--------+-------------+------------------------+
+   | object_identifier | String | REQUIRED    | The unique             |
+   |                   |        |             | identifier of the      |
+   |                   |        |             | specific object the    |
+   |                   |        |             | operation applies to   |
+   |                   |        |             | (e.g., foo.example     |
+   |                   |        |             | or CID-12345).         |
+   +-------------------+--------+-------------+------------------------+
 
-    +===================+========+=============+=====================+
-    | Field             | Type   | Requirement | Description         |
-    +===================+========+=============+=====================+
-    | type              | String | REQUIRED    | MUST be             |
-    |                   |        |             | rpp_transfer.       |
-    +-------------------+--------+-------------+---------------------+
-    | object_type       | String | REQUIRED    | The RPP object type |
-    |                   |        |             | being transferred.  |
-    |                   |        |             | MUST be one of      |
-    |                   |        |             | domain or contact.  |
-    +-------------------+--------+-------------+---------------------+
-    | object_identifier | String | REQUIRED    | The fully qualified |
-    |                   |        |             | name or handle of   |
-    |                   |        |             | the specific object |
-    |                   |        |             | to be transferred   |
-    |                   |        |             | (e.g., foo.example  |
-    |                   |        |             | or CID-12345).      |
-    +-------------------+--------+-------------+---------------------+
-
-      Table 2: RPP Transfer Authorization, RAR authorization_details
-                    object (Primary Method, [RFC9396])
+       Table 2: RPP Transfer Authorization, RAR authorization_details
+                     object (Primary Method, [RFC9396])
 
    Example RAR authorization_details value for a domain transfer:
 
    [{
-     "type": "rpp_transfer",
+     "type": "transfer",
      "object_type": "domain",
      "object_identifier": "foo.example"
    }]
 
-   The losing registrar's authorization server MUST echo the
+   The authorizing registrar's authorization server MUST echo the
    authorization_details back as a claim in the issued JWT.  The
    registry MUST validate the authorization_details claim in the token
    and MUST verify that object_type and object_identifier match the
    object being transferred.
 
-   When the losing registrar's authorization server does not support RAR
-   ([RFC9396]), the specific object being transferred MUST be conveyed
-   via the rpp_object_id claim rather than encoded in the scope string:
+   When the authorizing registrar's authorization server does not
+   support RAR ([RFC9396]), the RAR attributes MUST be conveyed using
+   individual claims;
 
-   -  To authorize a domain transfer, the specific domain name MUST be
-      present in the rpp_object_id claim (e.g., foo.example).
-   -  To authorize a contact transfer, the specific contact identifier
-      MUST be present in the rpp_object_id claim (e.g., REG-12345).
+   Table Table 2 lists the RAR fields as claims defined for RPP.
+
+   +===============+=================+======+===========+==============+
+   |Claim          |RAR Field        |Type  |Requirement|Description   |
+   +===============+=================+======+===========+==============+
+   |rpp_op_type    |type             |String|REQUIRED   |The type of   |
+   |               |                 |      |           |RPP operation |
+   |               |                 |      |           |being         |
+   |               |                 |      |           |authorized.   |
+   +---------------+-----------------+------+-----------+--------------+
+   |rpp_object_type|object_type      |String|REQUIRED   |The RPP       |
+   |               |                 |      |           |object type   |
+   |               |                 |      |           |being         |
+   |               |                 |      |           |transferred.  |
+   +---------------+-----------------+------+-----------+--------------+
+   |rpp_object_id  |object_identifier|String|REQUIRED   |The unique    |
+   |               |                 |      |           |identifier of |
+   |               |                 |      |           |the specific  |
+   |               |                 |      |           |object the    |
+   |               |                 |      |           |operation     |
+   |               |                 |      |           |applies to    |
+   |               |                 |      |           |(e.g.,        |
+   |               |                 |      |           |foo.example   |
+   |               |                 |      |           |or CID-       |
+   |               |                 |      |           |12345).       |
+   +---------------+-----------------+------+-----------+--------------+
+
+        Table 3: RPP RAR Attributes as JWT Claims (Fallback Method)
 
 7.  Claims
 
@@ -402,7 +419,7 @@ Table of Contents
 
 7.1.  Required Claims
 
-   Table Table 3 lists the claims defined in [RFC9068], these MUST be
+   Table Table 4 lists the claims defined in [RFC9068], these MUST be
    present in every RPP access token:
 
     +===========+=========+==========================================+
@@ -450,11 +467,11 @@ Table of Contents
     |           |         | scopes present in this claim.            |
     +-----------+---------+------------------------------------------+
 
-        Table 3: OAuth 2.0 Access Token Claims for RPP ([RFC9068])
+        Table 4: OAuth 2.0 Access Token Claims for RPP ([RFC9068])
 
 7.2.  RPP-Specific Claims
 
-   In addition to the standard [RFC9068] claims, table Table 4 lists the
+   In addition to the standard [RFC9068] claims, table Table 5 lists the
    RPP-specific claims that are defined to enable fine-grained
    authorization decisions.  Required claims MUST be present in every
    RPP access token.  Optional claims SHOULD be included when applicable
@@ -498,33 +515,34 @@ Table of Contents
    |                     |           |       | registrar identified    |
    |                     |           |       | by rpp_registrar_id.    |
    +---------------------+-----------+-------+-------------------------+
-   |rpp_transfer_authinfo|OPTIONAL   |String | The transfer            |
-   |                     |           |       | authorization           |
-   |                     |           |       | information used in     |
-   |                     |           |       | Fallback flow object    |
-   |                     |           |       | transfer.  When         |
-   |                     |           |       | present, the value      |
-   |                     |           |       | MUST be equivalent to   |
-   |                     |           |       | the value that would    |
-   |                     |           |       | otherwise be sent in    |
-   |                     |           |       | the RPP-Authorization   |
-   |                     |           |       | header, using the       |
-   |                     |           |       | same <method>           |
-   |                     |           |       | <authorization          |
-   |                     |           |       | information> format.    |
-   |                     |           |       | The RPP server MUST     |
-   |                     |           |       | treat this claim as     |
-   |                     |           |       | equivalent to the       |
-   |                     |           |       | RPP-Authorization       |
-   |                     |           |       | header; if both are     |
-   |                     |           |       | present in the same     |
-   |                     |           |       | request, the claim      |
-   |                     |           |       | value MUST take         |
-   |                     |           |       | precedence.  This       |
-   |                     |           |       | claim MUST only be      |
+   |authorization_details|OPTIONAL   |Array  | Rich authorization      |
+   |                     |           |of     | details as defined by   |
+   |                     |           |Objects| [RFC9396].  MUST be     |
    |                     |           |       | present in access       |
-   |                     |           |       | tokens used for         |
-   |                     |           |       | transfer operations.    |
+   |                     |           |       | tokens for              |
+   |                     |           |       | interactive federated   |
+   |                     |           |       | transfers when the      |
+   |                     |           |       | RAR method is used.     |
+   |                     |           |       | Each object in the      |
+   |                     |           |       | array MUST have a       |
+   |                     |           |       | type field; for RPP     |
+   |                     |           |       | transfer tokens the     |
+   |                     |           |       | type MUST be            |
+   |                     |           |       | rpp_transfer and the    |
+   |                     |           |       | object MUST include     |
+   |                     |           |       | object_type and         |
+   |                     |           |       | object_identifier       |
+   |                     |           |       | fields (see Table 2).   |
+   |                     |           |       | The RPP server MUST     |
+   |                     |           |       | validate that           |
+   |                     |           |       | object_type and         |
+   |                     |           |       | object_identifier       |
+   |                     |           |       | match the object        |
+   |                     |           |       | being transferred.      |
+   |                     |           |       | When this claim is      |
+   |                     |           |       | present, the            |
+   |                     |           |       | rpp_object_id claim     |
+   |                     |           |       | MUST NOT be present.    |
    +---------------------+-----------+-------+-------------------------+
    |rpp_object_id        |OPTIONAL   |String | The identifier of the   |
    |                     |           |       | specific object being   |
@@ -556,37 +574,33 @@ Table of Contents
    |                     |           |       | authorization_details   |
    |                     |           |       | is present.             |
    +---------------------+-----------+-------+-------------------------+
-   |authorization_details|OPTIONAL   |Array  | Rich authorization      |
-   |                     |           |of     | details as defined by   |
-   |                     |           |Objects| [RFC9396].  MUST be     |
-   |                     |           |       | present in access       |
-   |                     |           |       | tokens for              |
-   |                     |           |       | interactive federated   |
-   |                     |           |       | transfers when the      |
-   |                     |           |       | RAR method is used.     |
-   |                     |           |       | Each object in the      |
-   |                     |           |       | array MUST have a       |
-   |                     |           |       | type field; for RPP     |
-   |                     |           |       | transfer tokens the     |
-   |                     |           |       | type MUST be            |
-   |                     |           |       | rpp_transfer and the    |
-   |                     |           |       | object MUST include     |
-   |                     |           |       | object_type and         |
-   |                     |           |       | object_identifier       |
-   |                     |           |       | fields (see Table 2).   |
-   |                     |           |       | The RPP server MUST     |
-   |                     |           |       | validate that           |
-   |                     |           |       | object_type and         |
-   |                     |           |       | object_identifier       |
-   |                     |           |       | match the object        |
-   |                     |           |       | being transferred.      |
-   |                     |           |       | When this claim is      |
-   |                     |           |       | present, the            |
-   |                     |           |       | rpp_object_id claim     |
-   |                     |           |       | MUST NOT be present.    |
+   |rpp_op_type          |OPTIONAL   |String | The type of RPP         |
+   |                     |           |       | operation being         |
+   |                     |           |       | authorized.  Used in    |
+   |                     |           |       | the fallback method     |
+   |                     |           |       | (see Table 3) when      |
+   |                     |           |       | the authorization       |
+   |                     |           |       | server does not         |
+   |                     |           |       | support RAR.  MUST      |
+   |                     |           |       | NOT be present when     |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | is present.             |
+   +---------------------+-----------+-------+-------------------------+
+   |rpp_object_type      |OPTIONAL   |String | The RPP object type     |
+   |                     |           |       | the operation applies   |
+   |                     |           |       | to (e.g., domain or     |
+   |                     |           |       | contact).  Used in      |
+   |                     |           |       | the fallback method     |
+   |                     |           |       | (see Table 3) when      |
+   |                     |           |       | the authorization       |
+   |                     |           |       | server does not         |
+   |                     |           |       | support RAR.  MUST      |
+   |                     |           |       | NOT be present when     |
+   |                     |           |       | authorization_details   |
+   |                     |           |       | is present.             |
    +---------------------+-----------+-------+-------------------------+
 
-                 Table 4: RPP Specific Access Token Claims
+                 Table 5: RPP Specific Access Token Claims
 
    The combination of the sub claim and the rpp_registrar_id claim
    provides a complete, two-dimensional identity for every RPP request:
