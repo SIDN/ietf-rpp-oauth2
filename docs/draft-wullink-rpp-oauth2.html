@@ -1991,8 +1991,9 @@ li > p:last-of-type:only-child {
       <h2 id="name-managing-trust">
 <a href="#section-10" class="section-number selfRef">10. </a><a href="#name-managing-trust" class="section-name selfRef">Managing Trust</a>
       </h2>
-<p id="section-10-1">For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.<a href="#section-10-1" class="pilcrow">¶</a></p>
-<p id="section-10-2"><strong>TODO</strong> Create additional endpoints for managing trusted issuers and their keys, or specify a manual process for registrars to submit this information to the registry operator.<a href="#section-10-2" class="pilcrow">¶</a></p>
+<p id="section-10-1">For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. When JWTs are used for Client Authentication as specified in <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>, the registrar MUST be able to manage their public key(s) in the registry database.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-2">The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.<a href="#section-10-2" class="pilcrow">¶</a></p>
+<p id="section-10-3"><strong>TODO</strong> Create additional endpoints for managing trusted issuers and their keys, or specify a manual process for registrars to submit this information to the registry operator.<a href="#section-10-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="flows">
@@ -2007,8 +2008,8 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant <a href="htt
         <h3 id="name-machine-to-machine">
 <a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-machine-to-machine" class="section-name selfRef">Machine to Machine</a>
         </h3>
-<p id="section-11.1-1">The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. The OAuth 2.0 Client Credentials grant <a href="https://rfc-editor.org/rfc/rfc6749#appendix-Section%204.4" class="relref">Section 4.4</a> MUST be used for this flow.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
-<p id="section-11.1-2">In this flow the registrar's system authenticates directly with the registry's AS using a pre-registered <code>client_id</code> and <code>client_secret</code>. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <code>Authorization</code> header of each RPP request sent to the registry.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
+<p id="section-11.1-1">The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. JWTs for Client Authentication as specified in <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> or the OAuth 2.0 Client Credentials grant <a href="https://rfc-editor.org/rfc/rfc6749#appendix-Section%204.4" class="relref">Section 4.4</a> MUST be used.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
+<p id="section-11.1-2">In this flow the registrar's system authenticates directly with the registry's AS using a signed JWT or a pre-registered <code>client_id</code> and <code>client_secret</code>. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <code>Authorization</code> header of each RPP request sent to the registry.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
 <p id="section-11.1-3">The <code>sub</code> claim in the resulting token MUST be set to the <code>client_id</code> of the registrar's system. The <code>rpp_registrar_id</code> claim MUST also be present, identifying the registrar organization within the registry's namespace.<a href="#section-11.1-3" class="pilcrow">¶</a></p>
 <span id="name-oauth-20-client-credentials"></span><figure id="figure-2">
           <div class="lang-ascii sourcecode" id="section-11.1-4.1">
@@ -2047,7 +2048,7 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant <a href="htt
           </figcaption></figure>
 <p id="section-11.1-5">The steps in the diagram are as follows:<a href="#section-11.1-5" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-11.1-6">
-<li id="section-11.1-6.1">The registrar's backend system sends a token request to the registry's AS, providing its <code>client_id</code>, <code>client_secret</code> (or a signed client assertion), and the requested RPP scopes (e.g., <code>domain:create</code>).<a href="#section-11.1-6.1" class="pilcrow">¶</a>
+<li id="section-11.1-6.1">The registrar's backend system sends a token request to the registry's AS, it SHOULD use JWTs for Client Authentication as specified in <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> or if this is not supported by the AS, it SHOULD use the Client Credentials Grant, and the requested RPP scopes (e.g., <code>domain:create</code>).<a href="#section-11.1-6.1" class="pilcrow">¶</a>
 </li>
           <li id="section-11.1-6.2">The AS validates the client credentials and issues a signed, short-lived JWT access token containing the granted scopes, <code>sub</code> (set to <code>client_id</code>), and <code>rpp_registrar_id</code>.<a href="#section-11.1-6.2" class="pilcrow">¶</a>
 </li>
@@ -2059,31 +2060,79 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant <a href="htt
 </li>
         </ol>
 <p id="section-11.1-7">It is RECOMMENDED that access tokens be short-lived (e.g., minutes to hours) and that the registrar's system obtain a new token before the current token expires rather than waiting for a 401 response. Token caching and refresh strategies SHOULD follow the best practices in <span>[<a href="#RFC8725" class="cite xref">RFC8725</a>]</span>.<a href="#section-11.1-7" class="pilcrow">¶</a></p>
-<p id="section-11.1-8">Example request using the OAuth 2.0 Client Credentials grant, using the <code>domain:create</code> scope:<a href="#section-11.1-8" class="pilcrow">¶</a></p>
+<p id="section-11.1-8">Example request using JWT Client Authentication (<span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>), using the <code>domain:create</code> scope. The client authenticates by presenting a signed JWT assertion instead of a client secret:<a href="#section-11.1-8" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-11.1-9">
 <pre>POST /token HTTP/2
 Host: authorization-server.rpp.example
-Authorization: Basic bXljbGllbnRpZDpteWNsaWVudHNlY3JldA==
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials&amp;scope=domain:create
+grant_type=client_credentials
+&amp;scope=domain%3Acreate
+&amp;client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+&amp;client_assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJy\
+ZWdpc3RyYXItY2xpZW50LWlkIiwic3ViIjoicmVnaXN0cmFyLWNsaWVudC1pZCIsI\
+mF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi1zZXJ2ZXIucnBwLmV4YW1wbGUvdG\
+9rZW4iLCJqdGkiOiJ1bmlxdWUtand0LWlkLTEyMyIsImV4cCI6MTc0NjEzNDQwMH0\
+.SIGNATURE
 
 </pre><a href="#section-11.1-9" class="pilcrow">¶</a>
 </div>
-<p id="section-11.1-10">Response:<a href="#section-11.1-10" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-11.1-11">
+<p id="section-11.1-10">The <code>client_assertion</code> is a JWT signed with the registrar's private key. Its payload MUST contain:<a href="#section-11.1-10" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-11.1-11.1">
+            <code>iss</code>: the registrar's <code>client_id</code><a href="#section-11.1-11.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.1-11.2">
+            <code>sub</code>: the registrar's <code>client_id</code><a href="#section-11.1-11.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.1-11.3">
+            <code>aud</code>: the registry AS token endpoint URI<a href="#section-11.1-11.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.1-11.4">
+            <code>jti</code>: a unique identifier for this assertion (to prevent replay)<a href="#section-11.1-11.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.1-11.5">
+            <code>exp</code>: expiry time (SHOULD be short-lived, e.g., 60 seconds)<a href="#section-11.1-11.5" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-11.1-12">Example <code>client_assertion</code> payload:<a href="#section-11.1-12" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-11.1-13">
+<pre>{
+  "iss": "registrar-client-id",
+  "sub": "registrar-client-id",
+  "aud": "https://authorization-server.rpp.example/token",
+  "jti": "unique-jwt-id-123",
+  "exp": 1746134400
+}
+
+</pre><a href="#section-11.1-13" class="pilcrow">¶</a>
+</div>
+<p id="section-11.1-14">Example request using the OAuth 2.0 Client Credentials grant with a <code>client_secret</code> (fallback when JWT Client Authentication is not supported):<a href="#section-11.1-14" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="section-11.1-15">
+<pre>POST /token HTTP/2
+Host: authorization-server.rpp.example
+Authorization: Basic cmVnaXN0cmFyLWNsaWVudC1pZDpjbGllbnQtc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&amp;scope=domain%3Acreate
+
+</pre><a href="#section-11.1-15" class="pilcrow">¶</a>
+</div>
+<p id="section-11.1-16">Response:<a href="#section-11.1-16" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="section-11.1-17">
 <pre>HTTP/2 200 OK
 Content-Type: application/json;charset=UTF-8
 Cache-Control: no-store
 Pragma: no-cache
+
 {
-  "access_token": &lt;base64-encoded-jwt-token&gt;,
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "Bearer",
   "expires_in": 3600,
   "scope": "domain:create"
 }
 
-</pre><a href="#section-11.1-11" class="pilcrow">¶</a>
+</pre><a href="#section-11.1-17" class="pilcrow">¶</a>
 </div>
 <div id="high-risk-operations">
 <section id="section-11.1.1">
@@ -2349,6 +2398,10 @@ Content-Type: application/json
 <dt id="RFC7519">[RFC7519]</dt>
       <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7519">https://www.rfc-editor.org/info/rfc7519</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7523">[RFC7523]</dt>
+      <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Campbell, B.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants"</span>, <span class="seriesInfo">RFC 7523</span>, <span class="seriesInfo">DOI 10.17487/RFC7523</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7523">https://www.rfc-editor.org/info/rfc7523</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7617">[RFC7617]</dt>
       <dd>

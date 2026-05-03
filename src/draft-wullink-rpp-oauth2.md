@@ -322,7 +322,9 @@ The RPP Data Object Catalog described in [@!I-D.kowalik-rpp-data-objects] is ext
 
 # Managing Trust
 
-For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.
+For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. When JWTs are used for Client Authentication as specified in [@!RFC7523], the registrar MUST be able to manage their public key(s) in the registry database.
+
+The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.
 
 **TODO** Create additional endpoints for managing trusted issuers and their keys, or specify a manual process for registrars to submit this information to the registry operator.
 
@@ -333,9 +335,9 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant [@!RFC6749, 
 
 ## Machine to Machine
 
-The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. The OAuth 2.0 Client Credentials grant [@!RFC6749, Section 4.4] MUST be used for this flow.
+The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. JWTs for Client Authentication as specified in [@!RFC7523] or the OAuth 2.0 Client Credentials grant [@!RFC6749, Section 4.4] MUST be used.
 
-In this flow the registrar's system authenticates directly with the registry's AS using a pre-registered `client_id` and `client_secret`. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the `Authorization` header of each RPP request sent to the registry.
+In this flow the registrar's system authenticates directly with the registry's AS using a signed JWT or a pre-registered `client_id` and `client_secret`. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the `Authorization` header of each RPP request sent to the registry.
 
 The `sub` claim in the resulting token MUST be set to the `client_id` of the registrar's system. The `rpp_registrar_id` claim MUST also be present, identifying the registrar organization within the registry's namespace.
 
@@ -372,7 +374,7 @@ Figure: OAuth 2.0 Client Credentials Flow for Registrar-to-Registry Requests
 
 The steps in the diagram are as follows:
 
-1. The registrar's backend system sends a token request to the registry's AS, providing its `client_id`, `client_secret` (or a signed client assertion), and the requested RPP scopes (e.g., `domain:create`).
+1. The registrar's backend system sends a token request to the registry's AS, it SHOULD use JWTs for Client Authentication as specified in [@!RFC7523] or if this is not supported by the AS, it SHOULD use the Client Credentials Grant, and the requested RPP scopes (e.g., `domain:create`).
 2. The AS validates the client credentials and issues a signed, short-lived JWT access token containing the granted scopes, `sub` (set to `client_id`), and `rpp_registrar_id`.
 3. The registrar's system sends the RPP request to the registry's RPP server, including the access token in the HTTP `Authorization` header as a Bearer token.
 4. The RPP server validates the JWT entirely locally, using the without contacting the AS. It verifies the token's signature using the AS's public key (previously fetched and cached via OAuth 2.0 AS Metadata [@!RFC8414] and the referenced JWKS [@!RFC7517] endpoint), checks the standard claims (`iss`, `aud`, `exp`), and confirms that the `scope` claim includes the scope required for the requested operation.
@@ -380,15 +382,52 @@ The steps in the diagram are as follows:
 
 It is RECOMMENDED that access tokens be short-lived (e.g., minutes to hours) and that the registrar's system obtain a new token before the current token expires rather than waiting for a 401 response. Token caching and refresh strategies SHOULD follow the best practices in [@!RFC8725].
 
-Example request using the OAuth 2.0 Client Credentials grant, using the `domain:create` scope:
+Example request using JWT Client Authentication ([@!RFC7523]), using the `domain:create` scope. The client authenticates by presenting a signed JWT assertion instead of a client secret:
 
 ```http
 POST /token HTTP/2
 Host: authorization-server.rpp.example
-Authorization: Basic bXljbGllbnRpZDpteWNsaWVudHNlY3JldA==
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials&scope=domain:create
+grant_type=client_credentials
+&scope=domain%3Acreate
+&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+&client_assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJy\
+ZWdpc3RyYXItY2xpZW50LWlkIiwic3ViIjoicmVnaXN0cmFyLWNsaWVudC1pZCIsI\
+mF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi1zZXJ2ZXIucnBwLmV4YW1wbGUvdG\
+9rZW4iLCJqdGkiOiJ1bmlxdWUtand0LWlkLTEyMyIsImV4cCI6MTc0NjEzNDQwMH0\
+.SIGNATURE
+```
+
+The `client_assertion` is a JWT signed with the registrar's private key. Its payload MUST contain:
+
+- `iss`: the registrar's `client_id`
+- `sub`: the registrar's `client_id`
+- `aud`: the registry AS token endpoint URI
+- `jti`: a unique identifier for this assertion (to prevent replay)
+- `exp`: expiry time (SHOULD be short-lived, e.g., 60 seconds)
+
+Example `client_assertion` payload:
+
+```json
+{
+  "iss": "registrar-client-id",
+  "sub": "registrar-client-id",
+  "aud": "https://authorization-server.rpp.example/token",
+  "jti": "unique-jwt-id-123",
+  "exp": 1746134400
+}
+```
+
+Example request using the OAuth 2.0 Client Credentials grant with a `client_secret` (fallback when JWT Client Authentication is not supported):
+
+```http
+POST /token HTTP/2
+Host: authorization-server.rpp.example
+Authorization: Basic cmVnaXN0cmFyLWNsaWVudC1pZDpjbGllbnQtc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=domain%3Acreate
 ```
 
 Response:
@@ -398,8 +437,9 @@ HTTP/2 200 OK
 Content-Type: application/json;charset=UTF-8
 Cache-Control: no-store
 Pragma: no-cache
+
 {
-  "access_token": <base64-encoded-jwt-token>,
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "Bearer",
   "expires_in": 3600,
   "scope": "domain:create"

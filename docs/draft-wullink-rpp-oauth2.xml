@@ -455,7 +455,8 @@
 </section>
 
 <section anchor="managing-trust"><name>Managing Trust</name>
-<t>For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.</t>
+<t>For more advanced use cases, enabled by OAuth 2.0, such as an interactive federated object transfer, it is necessary for the RPP server to validate tokens issued by external ASs operated by registrars. This requires the RPP server to establish trust with these external ASs. When JWTs are used for Client Authentication as specified in <xref target="RFC7523"></xref>, the registrar MUST be able to manage their public key(s) in the registry database.</t>
+<t>The RPP server MUST maintain a trust store of authorized issuers and their associated public keys for validating access tokens. RPP MUST allow for registrars to register and maintain their ASs and public key information.</t>
 <t><strong>TODO</strong> Create additional endpoints for managing trusted issuers and their keys, or specify a manual process for registrars to submit this information to the registry operator.</t>
 </section>
 
@@ -464,8 +465,8 @@
 For these interactive flows, the OAuth 2.0 Authorization Code grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.1"></xref> MUST be used.</t>
 
 <section anchor="machine-to-machine"><name>Machine to Machine</name>
-<t>The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. The OAuth 2.0 Client Credentials grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.4"></xref> MUST be used for this flow.</t>
-<t>In this flow the registrar's system authenticates directly with the registry's AS using a pre-registered <tt>client_id</tt> and <tt>client_secret</tt>. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <tt>Authorization</tt> header of each RPP request sent to the registry.</t>
+<t>The machine-to-machine (M2M) flow is used for automated RPP requests such as domain provisioning, renewal, or host management sent by a registrar's backend systems to the registry. No end-user interaction is involved. JWTs for Client Authentication as specified in <xref target="RFC7523"></xref> or the OAuth 2.0 Client Credentials grant <xref target="RFC6749" sectionFormat="bare" section="Section 4.4"></xref> MUST be used.</t>
+<t>In this flow the registrar's system authenticates directly with the registry's AS using a signed JWT or a pre-registered <tt>client_id</tt> and <tt>client_secret</tt>. The AS issues a short-lived access token scoped to the requested RPP operations. The registrar's system then includes this token in the <tt>Authorization</tt> header of each RPP request sent to the registry.</t>
 <t>The <tt>sub</tt> claim in the resulting token MUST be set to the <tt>client_id</tt> of the registrar's system. The <tt>rpp_registrar_id</tt> claim MUST also be present, identifying the registrar organization within the registry's namespace.</t>
 <figure><name>OAuth 2.0 Client Credentials Flow for Registrar-to-Registry Requests
 </name>
@@ -502,21 +503,57 @@ For these interactive flows, the OAuth 2.0 Authorization Code grant <xref target
 <t>The steps in the diagram are as follows:</t>
 
 <ol spacing="compact">
-<li>The registrar's backend system sends a token request to the registry's AS, providing its <tt>client_id</tt>, <tt>client_secret</tt> (or a signed client assertion), and the requested RPP scopes (e.g., <tt>domain:create</tt>).</li>
+<li>The registrar's backend system sends a token request to the registry's AS, it SHOULD use JWTs for Client Authentication as specified in <xref target="RFC7523"></xref> or if this is not supported by the AS, it SHOULD use the Client Credentials Grant, and the requested RPP scopes (e.g., <tt>domain:create</tt>).</li>
 <li>The AS validates the client credentials and issues a signed, short-lived JWT access token containing the granted scopes, <tt>sub</tt> (set to <tt>client_id</tt>), and <tt>rpp_registrar_id</tt>.</li>
 <li>The registrar's system sends the RPP request to the registry's RPP server, including the access token in the HTTP <tt>Authorization</tt> header as a Bearer token.</li>
 <li>The RPP server validates the JWT entirely locally, using the without contacting the AS. It verifies the token's signature using the AS's public key (previously fetched and cached via OAuth 2.0 AS Metadata <xref target="RFC8414"></xref> and the referenced JWKS <xref target="RFC7517"></xref> endpoint), checks the standard claims (<tt>iss</tt>, <tt>aud</tt>, <tt>exp</tt>), and confirms that the <tt>scope</tt> claim includes the scope required for the requested operation.</li>
 <li>If validation succeeds, the RPP server processes the request and returns the RPP response.</li>
 </ol>
 <t>It is RECOMMENDED that access tokens be short-lived (e.g., minutes to hours) and that the registrar's system obtain a new token before the current token expires rather than waiting for a 401 response. Token caching and refresh strategies SHOULD follow the best practices in <xref target="RFC8725"></xref>.</t>
-<t>Example request using the OAuth 2.0 Client Credentials grant, using the <tt>domain:create</tt> scope:</t>
+<t>Example request using JWT Client Authentication (<xref target="RFC7523"></xref>), using the <tt>domain:create</tt> scope. The client authenticates by presenting a signed JWT assertion instead of a client secret:</t>
 
 <sourcecode type="http"><![CDATA[POST /token HTTP/2
 Host: authorization-server.rpp.example
-Authorization: Basic bXljbGllbnRpZDpteWNsaWVudHNlY3JldA==
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials&scope=domain:create
+grant_type=client_credentials
+&scope=domain%3Acreate
+&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+&client_assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJy\
+ZWdpc3RyYXItY2xpZW50LWlkIiwic3ViIjoicmVnaXN0cmFyLWNsaWVudC1pZCIsI\
+mF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi1zZXJ2ZXIucnBwLmV4YW1wbGUvdG\
+9rZW4iLCJqdGkiOiJ1bmlxdWUtand0LWlkLTEyMyIsImV4cCI6MTc0NjEzNDQwMH0\
+.SIGNATURE
+]]>
+</sourcecode>
+<t>The <tt>client_assertion</tt> is a JWT signed with the registrar's private key. Its payload MUST contain:</t>
+
+<ul spacing="compact">
+<li><tt>iss</tt>: the registrar's <tt>client_id</tt></li>
+<li><tt>sub</tt>: the registrar's <tt>client_id</tt></li>
+<li><tt>aud</tt>: the registry AS token endpoint URI</li>
+<li><tt>jti</tt>: a unique identifier for this assertion (to prevent replay)</li>
+<li><tt>exp</tt>: expiry time (SHOULD be short-lived, e.g., 60 seconds)</li>
+</ul>
+<t>Example <tt>client_assertion</tt> payload:</t>
+
+<sourcecode type="json"><![CDATA[{
+  "iss": "registrar-client-id",
+  "sub": "registrar-client-id",
+  "aud": "https://authorization-server.rpp.example/token",
+  "jti": "unique-jwt-id-123",
+  "exp": 1746134400
+}
+]]>
+</sourcecode>
+<t>Example request using the OAuth 2.0 Client Credentials grant with a <tt>client_secret</tt> (fallback when JWT Client Authentication is not supported):</t>
+
+<sourcecode type="http"><![CDATA[POST /token HTTP/2
+Host: authorization-server.rpp.example
+Authorization: Basic cmVnaXN0cmFyLWNsaWVudC1pZDpjbGllbnQtc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=domain%3Acreate
 ]]>
 </sourcecode>
 <t>Response:</t>
@@ -525,8 +562,9 @@ grant_type=client_credentials&scope=domain:create
 Content-Type: application/json;charset=UTF-8
 Cache-Control: no-store
 Pragma: no-cache
+
 {
-  "access_token": <base64-encoded-jwt-token>,
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "Bearer",
   "expires_in": 3600,
   "scope": "domain:create"
@@ -722,6 +760,7 @@ Content-Type: application/json
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.7517.xml"/>
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.7519.xml"/>
+<xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.7523.xml"/>
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.7617.xml"/>
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.7636.xml"/>
 <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8414.xml"/>
