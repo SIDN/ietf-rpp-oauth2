@@ -386,17 +386,12 @@ Example request using JWT Client Authentication ([@!RFC7523]), using the `domain
 
 ```http
 POST /token HTTP/2
-Host: authorization-server.rpp.example
+Host: as.rpp.example
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials
 &scope=domain%3Acreate
 &client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
-&client_assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJy\
-ZWdpc3RyYXItY2xpZW50LWlkIiwic3ViIjoicmVnaXN0cmFyLWNsaWVudC1pZCIsI\
-mF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi1zZXJ2ZXIucnBwLmV4YW1wbGUvdG\
-9rZW4iLCJqdGkiOiJ1bmlxdWUtand0LWlkLTEyMyIsImV4cCI6MTc0NjEzNDQwMH0\
-.SIGNATURE
+&client_assertion=eyJhbGciOiJSUzI1NiI[...omitted for brevity...]
 ```
 
 The `client_assertion` is a JWT signed with the registrar's private key. Its payload MUST contain:
