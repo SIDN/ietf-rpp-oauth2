@@ -46,8 +46,6 @@ This document describes how OAuth 2.0 [@!RFC6749] can be used to secure RESTful 
 
 In order to allow for fine-grained access control, which is a key design goal of RPP's authorization model, a registrar can operate multiple user accounts within the registry. Each account carries a distinct set of permissions appropriate to the user's or tool's role (e.g., read-only reporting accounts, accounts limited to a specific set of operations, or fully privileged administrative accounts). This allows registrars to implement the principle of least privilege within their own organizations without requiring separate registry-level registrar accounts.
 
-Due to the stateless nature of RPP, the client includes authorization credentials in each HTTP request. RPP uses OAuth 2.0 [@!RFC6749] for delegated authorization via Bearer tokens. Basic authentication [@!RFC7617] SHOULD NOT be used. The server MUST validate the Bearer token on each request and reject any request with an invalid or expired token with an appropriate HTTP status code.
-
 # Terminology
 
 In this document the following terminology is used.
