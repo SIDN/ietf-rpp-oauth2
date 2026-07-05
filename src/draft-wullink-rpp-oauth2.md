@@ -155,7 +155,7 @@ RPP MUST support the `Client Credentials Grant` grant type described in [@!RFC67
 
 OAuth 2.0 scopes are used for granting authorization and enforcing access control when accessing RPP resources. The server MUST define a set of scopes that can be requested by clients when obtaining access tokens. The server MUST also define the mapping between scopes and the specific resources and operations that they grant access to.
 
-RPP scopes are based on the objects, processes and operations defined in [@!I-D.kowalik-rpp-data-objects]. Each scope corresponds to a specific set of permissions for accessing and manipulating RPP resources.
+RPP scopes are based on the objects, processes and operations defined in [@!I-D.ietf-rpp-data-objects]. Each scope corresponds to a specific set of permissions for accessing and manipulating RPP resources.
 
 ## Scope Derivation Rules
 
