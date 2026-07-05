@@ -38,7 +38,7 @@ organization = "DENIC"
 
 .# Abstract
 
-This document describes how OAuth 2.0 [@!RFC6749] can be used to secure RESTful Provisioning Protocol (RPP) API requests described in [@!I-D.wullink-rpp-core].
+This document describes how OAuth 2.0 [@!RFC6749] can be used to secure RESTful Provisioning Protocol (RPP) API requests described in [@!I-D.ietf-rpp-core].
 
 {mainmatter}
 
@@ -159,7 +159,7 @@ RPP scopes are based on the objects, processes and operations defined in [@!I-D.
 
 ## Scope Derivation Rules
 
-RPP scopes are derived systematically from the data object types and operation categories defined in [@!I-D.kowalik-rpp-data-objects]. The derivation rules are as follows:
+RPP scopes are derived systematically from the data object types and operation categories defined in [@!I-D.ietf-rpp-data-objects]. The derivation rules are as follows:
 
 - The scope identifier MUST use the format `<object>:<access-level>`, where `<object>` is the lowercase stable identifier of the data object and `<access-level>` is one of the access levels defined below based on the object operation.
 - The `create` access level grants permission to perform the Create operation.
@@ -176,7 +176,7 @@ RPP scopes are derived systematically from the data object types and operation c
 
 ## Scope Registry
 
-Table (#tbl-scopes) defines the RPP scopes derived from the data objects specified in [@!I-D.kowalik-rpp-data-objects].
+Table (#tbl-scopes) defines the RPP scopes derived from the data objects specified in [@!I-D.ietf-rpp-data-objects].
 
 | Scope | Data Object | Operations Granted |
 | ----- | ----------- | ------------------ |
@@ -296,7 +296,7 @@ The RPP server MUST validate all required claims in accordance with [@!RFC9068] 
 
 <!-- TODO: Do we need additional data objects for OAuth 2.0 integration? see: https://github.com/SIDN/ietf-rpp-oauth2/issues/15 -->
 
-The RPP Data Object Catalog described in [@!I-D.kowalik-rpp-data-objects] is extended to include new objects required for using OAuth 2.0 as a framework for authorization in RPP.
+The RPP Data Object Catalog described in [@!I-D.ietf-rpp-data-objects] is extended to include new objects required for using OAuth 2.0 as a framework for authorization in RPP.
 
 - *Client Object*: A registrar MUST register at least one OAuth 2.0 client to interact with the RPP server. The Client Object MUST include the following attributes:
   - Name: Unique (in registrar namespace) name of application.
