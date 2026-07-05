@@ -52,8 +52,6 @@ Due to the stateless nature of RPP, the client includes authorization credential
 
 In this document the following terminology is used.
 
-RESTful Provisioning Protocol or RPP - The protocol described in this document.
-
 URL - A Uniform Resource Locator as defined in [@!RFC3986].
 
 Resource - An object having a type, data, and possible relationship to other resources, identified by a URL.
