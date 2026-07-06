@@ -6,7 +6,7 @@ workgroup = "Network Working Group"
 submissiontype = "IETF"
 keyword = [""]
 TocDepth = 4
-date = 2026-04-30
+date = 2026-07-06
 
 [seriesInfo]
 name = "Internet-Draft"
@@ -581,7 +581,6 @@ Content-Type: application/json
 }
 ```
 
-
 # IANA Considerations
 
 TODO
@@ -595,6 +594,8 @@ TODO
 TODO
 
 # Privacy Considerations
+
+TODO
 
 # Change History
 
